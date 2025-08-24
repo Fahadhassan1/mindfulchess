@@ -1,0 +1,230 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Ap    /**
+     * Display the specified payment.
+     *
+     * @param  \App\Models\Payment  $payment
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function show(Payment $payment)
+    {
+        $payment->load('session.teacher', 'session.student', 'user');
+        
+        return view('admin.payments.show', compact('payment'));
+    }
+    
+    /**
+     * Show the invoice for the specified payment.
+     *
+     * @param  \App\Models\Payment  $payment
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function showInvoice(Payment $payment)
+    {
+        $payment->load('session.teacher', 'session.student', 'user');
+        
+        return view('student.payments.invoice', compact('payment'));
+    }ment;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Stripe\Stripe;
+use Stripe\Refund;
+
+class PaymentController extends Controller
+{
+    public function __construct()
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
+    }
+
+    /**
+     * Display a listing of the payments.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function index(Request $request)
+    {
+        $query = Payment::query();
+
+        // Apply filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('payment_method_type')) {
+            $query->where('payment_method_type', $request->payment_method_type);
+        }
+
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', $request->customer_id);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('paid_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('paid_at', '<=', $request->date_to);
+        }
+
+        if ($request->filled('search')) {
+            $searchTerm = '%' . $request->search . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('customer_name', 'like', $searchTerm)
+                  ->orWhere('customer_email', 'like', $searchTerm)
+                  ->orWhere('payment_id', 'like', $searchTerm);
+            });
+        }
+
+        if ($request->filled('amount_min')) {
+            $query->where('amount', '>=', $request->amount_min);
+        }
+
+        if ($request->filled('amount_max')) {
+            $query->where('amount', '<=', $request->amount_max);
+        }
+
+        $payments = $query->orderBy('paid_at', 'desc')->paginate(15);
+
+        // Get customers for filter dropdown
+        $customers = User::role('student')->get();
+
+        // Calculate statistics
+        $stats = [
+            'total_payments' => Payment::count(),
+            'total_revenue' => Payment::where('status', 'succeeded')->sum('amount'),
+            'pending_payments' => Payment::where('status', 'pending')->count(),
+            'failed_payments' => Payment::where('status', 'failed')->count(),
+            'refunded_payments' => Payment::where('status', 'refunded')->count(),
+            'average_payment' => Payment::where('status', 'succeeded')->avg('amount'),
+            'this_month_revenue' => Payment::where('status', 'succeeded')
+                ->whereMonth('paid_at', now()->month)
+                ->whereYear('paid_at', now()->year)
+                ->sum('amount'),
+        ];
+
+        return view('admin.payments.index', compact('payments', 'customers', 'stats'));
+    }
+
+    /**
+     * Display the specified payment.
+     *
+     * @param  \App\Models\Payment  $payment
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function show(Payment $payment)
+    {
+        $payment->load(['session.student', 'session.teacher']);
+        
+        return view('admin.payments.show', compact('payment'));
+    }
+
+    /**
+     * Process a refund for the payment.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Payment  $payment
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function refund(Request $request, Payment $payment)
+    {
+        $request->validate([
+            'refund_amount' => 'required|numeric|min:0.01|max:' . $payment->amount,
+            'reason' => 'required|string|max:500'
+        ]);
+
+        try {
+            // Process refund through Stripe
+            $refund = Refund::create([
+                'payment_intent' => $payment->payment_id,
+                'amount' => $request->refund_amount * 100, // Convert to cents
+                'reason' => 'requested_by_customer',
+                'metadata' => [
+                    'reason' => $request->reason,
+                    'admin_id' => auth()->id(),
+                    'admin_name' => auth()->user()->name,
+                ]
+            ]);
+
+            // Update payment status
+            if ($request->refund_amount == $payment->amount) {
+                $payment->update(['status' => 'refunded']);
+            } else {
+                $payment->update(['status' => 'partially_refunded']);
+            }
+
+            // Update session status if exists
+            if ($payment->session) {
+                $payment->session->update(['status' => 'cancelled']);
+            }
+
+            return redirect()->back()->with('success', 'Refund processed successfully.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to process refund: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export payments to Excel.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function export(Request $request)
+    {
+        $query = Payment::query();
+
+        // Apply same filters as index
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('paid_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('paid_at', '<=', $request->date_to);
+        }
+
+        $payments = $query->orderBy('paid_at', 'desc')->get();
+
+        $filename = 'payments_' . now()->format('Y-m-d') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($payments) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'Payment ID', 'Customer Name', 'Customer Email', 'Amount', 'Currency', 
+                'Status', 'Payment Method', 'Paid At', 'Created At'
+            ]);
+
+            foreach ($payments as $payment) {
+                fputcsv($file, [
+                    $payment->payment_id,
+                    $payment->customer_name,
+                    $payment->customer_email,
+                    $payment->amount,
+                    $payment->currency,
+                    $payment->status,
+                    $payment->payment_method_type,
+                    $payment->paid_at ? $payment->paid_at->format('Y-m-d H:i:s') : '',
+                    $payment->created_at->format('Y-m-d H:i:s'),
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+}

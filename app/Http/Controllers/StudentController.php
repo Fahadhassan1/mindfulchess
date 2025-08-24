@@ -1,0 +1,355 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\ChessSession;
+use App\Models\Payment;
+use App\Models\User;
+use App\Models\Homework;
+use Illuminate\Http\Request;
+
+class StudentController extends Controller
+{
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware(['auth', 'role:student|teacher|admin']);
+    }
+
+    /**
+     * Show the student dashboard.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function index()
+    {
+        return view('student.dashboard');
+    }
+
+    /**
+     * Show the teachers page.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function teachers()
+    {
+        $student = auth()->user();
+        $teacher = null;
+        
+        // Reload the student with relationships
+        $student = User::with(['studentProfile.teacher.teacherProfile', 'studentProfile.teacher.availability'])
+                      ->find($student->id);
+        
+        if ($student->studentProfile && $student->studentProfile->teacher_id) {
+            $teacher = $student->studentProfile->teacher;
+        }
+        
+        return view('student.teachers', compact('teacher'));
+    }
+
+    /**
+     * Show the student profile page.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function profile()
+    {
+        $user = auth()->user();
+        $profile = $user->studentProfile;
+        
+        return view('student.profile', compact('user', 'profile'));
+    }
+
+    /**
+     * Update the student's profile.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+        
+        $validated = $request->validate([
+            'age' => 'nullable|integer|min:5|max:100',
+            'level' => 'nullable|string|max:255',
+            'parent_name' => 'nullable|string|max:255',
+            'parent_email' => 'nullable|email|max:255',
+            'parent_phone' => 'nullable|string|max:20',
+            'school' => 'nullable|string|max:255',
+            'learning_goals' => 'nullable|string',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+        
+        if ($request->hasFile('profile_image')) {
+            $image = $request->file('profile_image');
+            $imageName = time() . '.' . $image->extension();
+            $image->storeAs('profile_images', $imageName, 'public');
+            $validated['profile_image'] = $imageName;
+        }
+        
+        // Find or create student profile
+        $studentProfile = \App\Models\StudentProfile::firstOrNew(['user_id' => $user->id]);
+        $studentProfile->fill($validated);
+        $studentProfile->save();
+        
+        return redirect()->route('student.profile')->with('success', 'Profile updated successfully.');
+    }
+    
+    /**
+     * Show the student's sessions.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function sessions()
+    {
+        $user = auth()->user();
+        
+        $sessions = ChessSession::where('student_id', $user->id)
+            ->with(['teacher', 'payment', 'homework'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+            
+        return view('student.sessions', compact('sessions'));
+    }
+    
+    /**
+     * Show a specific session details.
+     *
+     * @param  \App\Models\ChessSession  $session
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function showSession(ChessSession $session)
+    {
+        $user = auth()->user();
+        
+        // Check if the session belongs to the student
+        if ($session->student_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+        
+        // Eager load related data
+        $session->load(['teacher', 'payment', 'homework.teacher']);
+        
+        return view('student.sessions.show', compact('session'));
+    }
+    
+    /**
+     * Show the student's payment history.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function payments()
+    {
+        $user = auth()->user();
+        
+        $payments = Payment::where('customer_email', $user->email)
+            ->with('chessSession')  // Eager load the chess session relationship
+            ->orderBy('paid_at', 'desc')
+            ->paginate(10);
+            
+        return view('student.payments', compact('payments'));
+    }
+
+    /**
+     * Show the invoice for a specific payment.
+     *
+     * @param  \App\Models\Payment  $payment
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function invoice(Payment $payment)
+    {
+        $user = auth()->user();
+        
+        // Check if the payment belongs to the student
+        if ($payment->customer_email !== $user->email) {
+            abort(403, 'Unauthorized');
+        }
+        
+        // Eager load related data
+        $payment->load('chessSession');
+        
+        return view('student.payments.invoice', compact('payment'));
+    }
+
+    /**
+     * Show the student's payment methods.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function paymentMethods()
+    {
+        $user = auth()->user();
+        
+        $paymentMethods = Payment::where('customer_email', $user->email)
+            ->where('status', 'succeeded')
+            ->whereNotNull('payment_method_id')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->unique('payment_method_id'); // Remove duplicates based on payment method ID
+            
+        return view('student.payment-methods', compact('paymentMethods'));
+    }
+
+    /**
+     * Set a payment method as default.
+     *
+     * @param  \App\Models\Payment  $payment
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function setDefaultPaymentMethod(Payment $payment)
+    {
+        $user = auth()->user();
+        
+        // Check if the payment belongs to the student
+        if ($payment->customer_email !== $user->email) {
+            abort(403, 'Unauthorized');
+        }
+        
+        // Set as default
+        $payment->setAsDefault();
+        
+        return redirect()->route('student.payment-methods')
+                        ->with('success', 'Payment method set as default successfully!');
+    }
+
+    /**
+     * Show the student's homework assignments.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function homework(Request $request)
+    {
+        $student = auth()->user();
+        
+        // Get homework with filtering
+        $homeworkQuery = Homework::where('student_id', $student->id)
+            ->with(['session', 'teacher'])
+            ->orderBy('created_at', 'desc');
+            
+        // Filter by status if provided
+        if ($request->has('status') && $request->status !== '') {
+            $homeworkQuery->where('status', $request->status);
+        }
+        
+        $homework = $homeworkQuery->paginate(10);
+        
+        // Get homework statistics
+        $totalHomework = Homework::where('student_id', $student->id)->count();
+        $assignedHomework = Homework::where('student_id', $student->id)->where('status', 'assigned')->count();
+        $inProgressHomework = Homework::where('student_id', $student->id)->where('status', 'in_progress')->count();
+        $completedHomework = Homework::where('student_id', $student->id)->where('status', 'completed')->count();
+        $overdueHomework = Homework::where('student_id', $student->id)
+            ->where('due_date', '<', now()->toDateString())
+            ->whereNotIn('status', ['completed', 'submitted'])
+            ->count();
+        
+        return view('student.homework', compact(
+            'homework', 
+            'totalHomework', 
+            'assignedHomework', 
+            'inProgressHomework', 
+            'completedHomework',
+            'overdueHomework'
+        ));
+    }
+
+    /**
+     * Show individual homework details.
+     *
+     * @param  \App\Models\Homework  $homework
+     * @return \Illuminate\Contracts\Support\Renderable|\Illuminate\Http\RedirectResponse
+     */
+    public function showHomework(Homework $homework)
+    {
+        $student = auth()->user();
+        
+        // Check if the homework belongs to the student
+        if ($homework->student_id !== $student->id) {
+            return redirect()->route('student.homework')
+                             ->with('error', 'You are not authorized to view this homework.');
+        }
+        
+        $homework->load(['session', 'teacher']);
+        
+        return view('student.homework-details', compact('homework'));
+    }
+
+    /**
+     * Update homework status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Homework  $homework
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateHomeworkStatus(Request $request, Homework $homework)
+    {
+        $student = auth()->user();
+        
+        // Check if the homework belongs to the student
+        if ($homework->student_id !== $student->id) {
+            return redirect()->route('student.homework')
+                             ->with('error', 'You are not authorized to update this homework.');
+        }
+        
+        $request->validate([
+            'status' => 'required|in:in_progress,completed',
+            'student_notes' => 'nullable|string|max:1000',
+        ]);
+        
+        $updateData = [
+            'status' => $request->status,
+            'student_notes' => $request->student_notes,
+        ];
+        
+        if ($request->status === 'completed') {
+            $updateData['completed_at'] = now();
+        }
+        
+        $homework->update($updateData);
+        
+        return redirect()->route('student.homework.show', $homework)
+                         ->with('success', 'Homework status updated successfully!');
+    }
+
+    /**
+     * Download homework attachment.
+     *
+     * @param  \App\Models\Homework  $homework
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function downloadHomework(Homework $homework)
+    {
+        $student = auth()->user();
+        
+        // Check if the homework belongs to the student
+        if ($homework->student_id !== $student->id) {
+            return redirect()->route('student.homework')
+                             ->with('error', 'You are not authorized to download this file.');
+        }
+        
+        // Check if homework has an attachment
+        if (!$homework->attachment_path) {
+            return redirect()->back()
+                             ->with('error', 'No attachment found for this homework.');
+        }
+        
+        $filePath = storage_path('app/public/' . $homework->attachment_path);
+        
+        // Check if file exists
+        if (!file_exists($filePath)) {
+            return redirect()->back()
+                             ->with('error', 'File not found. Please contact your teacher.');
+        }
+        
+        // Extract original filename from the path
+        $originalName = basename($homework->attachment_path);
+        
+        return response()->download($filePath, $originalName);
+    }
+}

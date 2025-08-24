@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom primary colors using exact hex #532563 */
+@layer utilities {
+    .bg-custom-primary {
+        background-color: #532563;
+    }
+    
+    .bg-custom-primary-hover:hover {
+        background-color: rgba(83, 37, 99, 0.9);
+    }
+    
+    .text-custom-primary {
+        color: #532563;
+    }
+    
+    .border-custom-primary {
+        border-color: #532563;
+    }
+    
+    .ring-custom-primary {
+        --tw-ring-color: #532563;
+    }
+}
