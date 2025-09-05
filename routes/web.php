@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-
+use Illuminate\Support\Facades\Mail;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('login');
 });
-
 
 // Checkout routes
 Route::get('/checkout', [App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout');
@@ -169,4 +168,20 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+
+// test route for email previews
+Route::get('/test-email', function () {
+    $toEmail = request('to', 'fahadhassan353@gmail.com'); // Pass ?to=email@example.com
+
+    try {
+        Mail::raw('This is a test email sent directly from a Laravel route!', function ($message) use ($toEmail) {
+            $message->to($toEmail)
+                    ->subject('Laravel Test Email');
+        });
+
+        return response()->json(['message' => "✅ Email sent successfully to {$toEmail}"]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
 require __DIR__.'/auth.php';

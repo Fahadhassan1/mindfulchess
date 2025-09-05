@@ -282,6 +282,9 @@
             background: #6c757d;
             color: white;
         }
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
         
         .btn-secondary:hover {
             background: #545b62;
@@ -494,9 +497,9 @@
 
         <!-- Actions -->
         <div class="actions">
-            <a href="{{ route('admin.payments.index') }}" class="btn btn-secondary">← Back to Payments</a>
-            <a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-secondary">View Details</a>
-            <button onclick="window.print()" class="btn btn-primary">Print Invoice</button>
+            <a href="{{ route('admin.payments.index') }}" class="btn btn-secondary mt-2">← Back to Payments</a>
+            <a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-secondary mt-2">View Details</a>
+            <button onclick="window.print()" class="btn btn-primary mt-2">Print Invoice</button>
         </div>
 
         <!-- Footer -->

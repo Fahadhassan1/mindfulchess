@@ -41,10 +41,33 @@
                 </header>
             @endif
 
+            <!-- Alert Messages -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                @include('components.alerts')
+            </div>
+
             <!-- Page Content -->
             <main>
                  {{ $slot }}
             </main>
         </div>
+        <!-- Alert Auto-close Script -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Auto-close alerts after 5 seconds
+                const alerts = document.querySelectorAll('.alert-success, .alert-error, .alert-warning, .alert-info');
+                
+                alerts.forEach(function(alert) {
+                    setTimeout(function() {
+                        alert.style.opacity = '0';
+                        alert.style.transition = 'opacity 1s';
+                        
+                        setTimeout(function() {
+                            alert.style.display = 'none';
+                        }, 1000);
+                    }, 5000);
+                });
+            });
+        </script>
     </body>
 </html>

@@ -79,8 +79,8 @@
                                     <div>
                                         <h3 class="text-lg font-semibold">My Profile</h3>
                                         <p class="text-sm mt-2">
-                                            @if($teacher->teacherProfile && $teacher->teacherProfile->qualification)
-                                                {{ $teacher->teacherProfile->qualification }}
+                                            @if($teacher->teacherProfile)
+                                                Your profile is set up
                                             @else
                                                 Complete your profile details
                                             @endif

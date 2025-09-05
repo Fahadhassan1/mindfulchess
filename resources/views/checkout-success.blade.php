@@ -18,7 +18,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f7f8fa;
+            background-color: rgb(83 37 99);
             color: #333;
             line-height: 1.5;
         }
@@ -93,8 +93,8 @@
         }
         .btn-primary {
             color: #fff;
-            background-color: #000;
-            border-color: #000;
+            background-color: rgb(83 37 99);
+            border-color: rgb(83 37 99);
         }
         .btn-primary:hover {
             background-color: #333;
@@ -157,7 +157,7 @@
                 </div>
             </div>
             
-            <a href="{{ url('/') }}" class="btn btn-primary">Return to Home</a>
+            <a href="{{ url('https://www.mindfulchess.org/') }}" class="btn btn-primary">Return to Home</a>
         </div>
     </div>
 </body>

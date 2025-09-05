@@ -7,11 +7,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @if(session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                    <span class="block sm:inline">{{ session('success') }}</span>
-                </div>
-            @endif
+
 
             @if(session('error'))
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
@@ -60,13 +56,7 @@
                                 @enderror
                             </div>
 
-                            <!-- Qualification -->
-                            <div>
-                                <x-input-label for="qualification" :value="__('Qualification')" />
-                                <x-text-input id="qualification" name="qualification" type="text" class="mt-1 block w-full" 
-                                    :value="old('qualification', $teacher->teacherProfile->qualification ?? '')" />
-                                <x-input-error class="mt-2" :messages="$errors->get('qualification')" />
-                            </div>
+
 
                             <!-- Teaching Type -->
                             <div>
@@ -74,10 +64,8 @@
                                 <select id="teaching_type" name="teaching_type" 
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                     <option value="">Select a teaching type</option>
-                                    <option value="children" {{ old('teaching_type', $teacher->teacherProfile->teaching_type ?? '') == 'children' ? 'selected' : '' }}>Children</option>
                                     <option value="adult" {{ old('teaching_type', $teacher->teacherProfile->teaching_type ?? '') == 'adult' ? 'selected' : '' }}>Adult</option>
                                     <option value="kids" {{ old('teaching_type', $teacher->teacherProfile->teaching_type ?? '') == 'kids' ? 'selected' : '' }}>Kids</option>
-                                    <option value="all" {{ old('teaching_type', $teacher->teacherProfile->teaching_type ?? '') == 'all' ? 'selected' : '' }}>All</option>
                                 </select>
                                 <x-input-error class="mt-2" :messages="$errors->get('teaching_type')" />
                             </div>

@@ -39,7 +39,7 @@
                             <p class="text-sm text-gray-700 mt-2">Manage payments, methods, and view invoices.</p>
                             <div class="mt-3 space-y-2">
                                 <a href="{{ route('student.payments') }}" class="block bg-purple-600 text-white px-4 py-2 rounded text-sm hover:bg-purple-700 text-center">Payment History</a>
-                                <a href="{{ route('student.payment-methods') }}" class="block bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700 text-center">Payment Methods</a>
+                                {{-- <a href="{{ route('student.payment-methods') }}" class="block bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700 text-center">Payment Methods</a> --}}
                             </div>
                         </div>
                         

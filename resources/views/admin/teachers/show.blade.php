@@ -31,9 +31,7 @@
                                 <p class="text-gray-500">{{ $teacher->email }}</p>
                                 
                                 <div class="mt-4 text-left">
-                                    <p class="text-sm font-semibold">Qualification:</p>
-                                    <p>{{ $teacher->teacherProfile->qualification ?? 'Not specified' }}</p>
-                                    
+
                                     <p class="text-sm font-semibold mt-2">Teaching Type:</p>
                                     <p>{{ $teacher->teacherProfile && $teacher->teacherProfile->teaching_type ? ucfirst($teacher->teacherProfile->teaching_type) : 'Not specified' }}</p>
                                     

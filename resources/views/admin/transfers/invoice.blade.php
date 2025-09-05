@@ -4,10 +4,11 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Admin Transfer Invoice - Transfer #{{ $transfer->id }}
             </h2>
-            <div class="text-right">
-                <span class="text-lg font-semibold text-red-600">£{{ number_format($transfer->amount, 2) }}</span>
-                <div class="text-sm text-gray-500">Administrative View</div>
-            </div>
+             <button onclick="window.print()" 
+                            class="inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200">
+                        <i class="fas fa-print mr-2"></i>
+                        Print Invoice
+            </button>
         </div>
     </x-slot>
 
@@ -245,24 +246,16 @@
 
                 <!-- Actions -->
                 <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-                    <a href="{{ route('admin.transfers.index') }}" 
-                       class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back to Transfers
-                    </a>
+                 
                     
                     <div class="space-x-2">
                         <a href="{{ route('admin.transfers.show', $transfer) }}" 
-                           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200">
+                           class="bg-primary-800 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded">
                             <i class="fas fa-eye mr-2"></i>
                             View Details
                         </a>
                         
-                        <button onclick="window.print()" 
-                                class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200">
-                            <i class="fas fa-print mr-2"></i>
-                            Print Invoice
-                        </button>
+                    
                     </div>
                 </div>
             </div>

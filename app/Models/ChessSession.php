@@ -24,7 +24,9 @@ class ChessSession extends Model
         'duration',
         'lesson_date',
         'payment_id',
-        'admin_notes'
+        'admin_notes',
+        'session_type',
+        'session_name'
     ];
     
     /**

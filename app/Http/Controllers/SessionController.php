@@ -55,8 +55,7 @@ class SessionController extends Controller
                                   ->where(function($inner) use ($teachingType) {
                                       $inner->where('session_type', $teachingType)
                                             ->orWhere(function($or) use ($teachingType) {
-                                                $or->where('session_type', 'all')
-                                                   ->orWhere(DB::raw("'$teachingType'"), 'all');
+                                                $or->where('session_type', $teachingType);
                                             });
                                   });
                             });

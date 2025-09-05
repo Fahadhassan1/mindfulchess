@@ -6,7 +6,7 @@
             </h2>
             @if($teacher)
                 <a href="{{ route('student.booking.calendar') }}" class="bg-primary-800 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded">
-                    Book Session with {{ $teacher->name }}
+                    Book Session
                 </a>
             @endif
         </div>
@@ -14,13 +14,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            @if(session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <span class="block sm:inline">{{ session('success') }}</span>
-                </div>
-            @endif
-
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     @if($teacher)
                         <div class="mb-6">
@@ -42,17 +36,12 @@
                                 
                                 <div class="md:w-3/4">
                                     <h4 class="text-xl font-bold">{{ $teacher->name }}</h4>
-                                    <p class="text-gray-600">{{ $teacher->email }}</p>
+                                    {{-- <p class="text-gray-600">{{ $teacher->email }}</p> --}}
                                     
                                     @if($teacher->teacherProfile)
                                         <div class="mt-4">
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                @if($teacher->teacherProfile->qualification)
-                                                <div>
-                                                    <p class="text-gray-500 text-sm">Qualification</p>
-                                                    <p class="font-medium">{{ $teacher->teacherProfile->qualification }}</p>
-                                                </div>
-                                                @endif
+
                                                 
                                                 @if($teacher->teacherProfile->teaching_type)
                                                 <div>

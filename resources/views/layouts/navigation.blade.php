@@ -48,7 +48,7 @@
                         {{ __('My Sessions') }}
                     </x-nav-link>
                     <x-nav-link :href="route('teacher.transfers')" :active="request()->routeIs('teacher.transfers*')">
-                        {{ __('Transfers') }}
+                        {{ __('My Payments') }}
                     </x-nav-link>
                     <x-nav-link :href="route('teacher.students')" :active="request()->routeIs('teacher.students')">
                         {{ __('My Students') }}

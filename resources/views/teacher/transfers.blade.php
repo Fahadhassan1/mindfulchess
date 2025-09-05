@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('My Transfers & Earnings') }}
+                {{ __('My Payments') }}
             </h2>
             <div class="text-sm text-gray-600">
                 Total Sessions: {{ $totalSessions }}
@@ -19,11 +19,11 @@
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <svg class="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                    <text x="7" y="19" font-size="12" fill="currentColor" font-family="Arial" font-weight="bold">£</text>
                                 </svg>
                             </div>
                             <div class="ml-4">
-                                <p class="text-sm font-medium text-green-600">Total Earnings</p>
+                                <p class="text-sm font-medium text-green-600">Total Payments</p>
                                 <p class="text-2xl font-semibold text-green-900">£{{ number_format($totalEarnings, 2) }}</p>
                             </div>
                         </div>
@@ -79,46 +79,20 @@
                 </div>
             </div>
 
-            <!-- Payment Breakdown Info -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Structure</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-blue-50 rounded-lg p-4">
-                            <h4 class="font-medium text-blue-900 mb-2">60 Minutes Session</h4>
-                            <p class="text-sm text-blue-700">Student pays: £45.00</p>
-                            <p class="text-sm text-blue-700">Your share: £25.00</p>
-                            <p class="text-sm text-blue-600">App fee: £20.00</p>
-                        </div>
-                        <div class="bg-green-50 rounded-lg p-4">
-                            <h4 class="font-medium text-green-900 mb-2">45 Minutes Session</h4>
-                            <p class="text-sm text-green-700">Student pays: £35.00</p>
-                            <p class="text-sm text-green-700">Your share: £18.75</p>
-                            <p class="text-sm text-green-600">App fee: £16.25</p>
-                        </div>
-                        <div class="bg-purple-50 rounded-lg p-4">
-                            <h4 class="font-medium text-purple-900 mb-2">30 Minutes Session</h4>
-                            <p class="text-sm text-purple-700">Student pays: £25.00</p>
-                            <p class="text-sm text-purple-700">Your share: £12.50</p>
-                            <p class="text-sm text-purple-600">App fee: £12.50</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Transfers List -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Transfer History</h3>
-                    
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Payments History</h3>
+
                     @if($transfers->isEmpty())
                         <div class="text-center py-12">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                <text x="7" y="19" font-size="12" fill="currentColor" font-family="Arial" font-weight="bold">£</text>
                             </svg>
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">No transfers yet</h3>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No payments yet</h3>
                             <p class="mt-1 text-sm text-gray-500">
-                                Complete sessions to see your earnings here.
+                                Complete sessions to see your payments here.
                             </p>
                         </div>
                     @else
@@ -141,9 +115,9 @@
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Date
                                         </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{-- <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Actions
-                                        </th>
+                                        </th> --}}
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
@@ -156,13 +130,13 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="text-sm font-medium text-gray-900">{{ $transfer->session->student->name }}</div>
-                                                <div class="text-sm text-gray-500">{{ $transfer->session->student->email }}</div>
+                                                {{-- <div class="text-sm text-gray-500">{{ $transfer->session->student->email }}</div> --}}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="text-sm text-gray-900">
-                                                    <div class="font-medium text-green-600">Your earnings: £{{ number_format($transfer->amount, 2) }}</div>
-                                                    <div class="text-gray-500">Total paid: £{{ number_format($transfer->total_session_amount * 100, 2) }}</div>
-                                                    <div class="text-gray-500">App fee: £{{ number_format($transfer->application_fee, 2) }}</div>
+                                                    <div class="font-medium text-green-600">Your payments: £{{ number_format($transfer->amount, 2) }}</div>
+                                                    {{-- <div class="text-gray-500">Total paid: £{{ number_format($transfer->total_session_amount * 100, 2) }}</div> --}}
+                                                    {{-- <div class="text-gray-500">App fee: £{{ number_format($transfer->application_fee, 2) }}</div> --}}
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
@@ -185,7 +159,7 @@
                                                     <span class="text-gray-400">Pending</span>
                                                 @endif
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            {{-- <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 @if($transfer->status !== 'failed')
                                                     <a href="{{ route('teacher.transfers.invoice', $transfer->id) }}" 
                                                        class="inline-flex items-center px-3 py-1 bg-primary-800 text-white text-xs font-medium rounded-md hover:bg-primary-700 transition duration-200">
@@ -195,7 +169,7 @@
                                                 @else
                                                     <span class="text-gray-400 text-xs">Failed</span>
                                                 @endif
-                                            </td>
+                                            </td> --}}
                                         </tr>
                                     @endforeach
                                 </tbody>

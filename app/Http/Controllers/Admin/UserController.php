@@ -80,6 +80,13 @@ class UserController extends Controller
 
         $user->assignRole($request->role);
 
+        // If user is assigned a teacher role, create an active teacher profile
+        if ($request->role === 'teacher') {
+            $user->teacherProfile()->create([
+                'is_active' => true
+            ]);
+        }
+
         return redirect()->route('admin.users')->with('success', 'User created successfully.');
     }
 
@@ -122,6 +129,13 @@ class UserController extends Controller
         $user->save();
         
         $user->syncRoles($request->role);
+        
+        // If user is assigned a teacher role, create an active teacher profile if it doesn't exist
+        if ($request->role === 'teacher' && !$user->teacherProfile) {
+            $user->teacherProfile()->create([
+                'is_active' => true
+            ]);
+        }
 
         return redirect()->route('admin.users')->with('success', 'User updated successfully.');
     }

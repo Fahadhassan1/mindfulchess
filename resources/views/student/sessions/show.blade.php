@@ -68,7 +68,7 @@
                                 @endif
                                 <div>
                                     <p class="font-semibold text-gray-800">{{ $session->teacher->name }}</p>
-                                    <p class="text-gray-600">{{ $session->teacher->email }}</p>
+                                    {{-- <p class="text-gray-600">{{ $session->teacher->email }}</p> --}}
                                     @if($session->teacher->teacherProfile)
                                         @if($session->teacher->teacherProfile->experience_years)
                                             <p class="text-sm text-gray-500 mt-1">{{ $session->teacher->teacherProfile->experience_years }} years of experience</p>

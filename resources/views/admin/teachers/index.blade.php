@@ -9,17 +9,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            @if(session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <span class="block sm:inline">{{ session('success') }}</span>
-                </div>
-            @endif
-
-            @if(session('error'))
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <span class="block sm:inline">{{ session('error') }}</span>
-                </div>
-            @endif
+         
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
@@ -74,7 +64,7 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qualification</th>
+
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teaching Type</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -86,13 +76,12 @@
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $teacher->name }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $teacher->email }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $teacher->teacherProfile->qualification ?? 'Not specified' }}
+
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($teacher->teacherProfile && $teacher->teacherProfile->teaching_type)
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            @if($teacher->teacherProfile->teaching_type == 'children') bg-blue-100 text-blue-800
-                                            @elseif($teacher->teacherProfile->teaching_type == 'adult') bg-purple-100 text-purple-800
+                                            @if($teacher->teacherProfile->teaching_type == 'adult') bg-purple-100 text-purple-800
                                             @elseif($teacher->teacherProfile->teaching_type == 'kids') bg-green-100 text-green-800
                                             @else bg-gray-100 text-gray-800 @endif">
                                                 {{ ucfirst($teacher->teacherProfile->teaching_type) }}

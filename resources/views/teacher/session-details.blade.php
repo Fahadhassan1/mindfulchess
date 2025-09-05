@@ -14,11 +14,7 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    @if(session('success'))
-                        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-                            <p>{{ session('success') }}</p>
-                        </div>
-                    @endif
+
 
                     <!-- Session Overview -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -79,7 +75,7 @@
                                     </div>
                                     <div class="ml-4">
                                         <h4 class="text-lg font-medium text-gray-900">{{ $session->student->name ?? 'Student' }}</h4>
-                                        <p class="text-sm text-gray-500">{{ $session->student->email ?? 'N/A' }}</p>
+                                        {{-- <p class="text-sm text-gray-500">{{ $session->student->email ?? 'N/A' }}</p> --}}
                                     </div>
                                 </div>
                                 @if($session->student->studentProfile)
@@ -101,7 +97,7 @@
                     </div>
 
                     <!-- Payment Information -->
-                    @if($session->payment)
+                    {{-- @if($session->payment)
                     <div class="bg-green-50 rounded-lg p-6 mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -121,7 +117,7 @@
                             </div>
                         </div>
                     </div>
-                    @endif
+                    @endif --}}
 
                     <!-- Session Notes -->
                     <div class="bg-purple-50 rounded-lg p-6 mb-6">
@@ -187,14 +183,7 @@
                             </a>
                         @endif
                         
-                        @if($session->payment)
-                            <a href="{{ route('student.payments.invoice', $session->payment) }}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                View Invoice
-                            </a>
-                        @endif
+                
                     </div>
                 </div>
             </div>

@@ -89,8 +89,7 @@ class TeacherController extends Controller
 
         // Validate the request data
         $request->validate([
-            'qualification' => 'nullable|string|max:255',
-            'teaching_type' => 'nullable|in:children,adult,kids,all',
+            'teaching_type' => 'nullable|in:adult,kids',
             'stripe_account_id' => 'nullable|string|max:255',
             'bio' => 'nullable|string',
             'experience_years' => 'nullable|integer|min:0',
@@ -119,7 +118,6 @@ class TeacherController extends Controller
 
         // Update or create teacher profile
         $profileData = $request->only([
-            'qualification',
             'teaching_type',
             'stripe_account_id',
             'bio',
@@ -246,7 +244,7 @@ class TeacherController extends Controller
             'Expires' => '0'
         ];
         
-        $columns = ['Name', 'Email', 'Qualification', 'Teaching Type', 'Experience (Years)', 'Status'];
+        $columns = ['Name', 'Email', 'Teaching Type', 'Experience (Years)', 'Status'];
         
         $callback = function() use ($teachers, $columns) {
             $file = fopen('php://output', 'w');
@@ -256,7 +254,6 @@ class TeacherController extends Controller
                 $row = [
                     $teacher->name,
                     $teacher->email,
-                    $teacher->teacherProfile->qualification ?? 'Not specified',
                     $teacher->teacherProfile->teaching_type ?? 'Not specified',
                     $teacher->teacherProfile->experience_years ?? 'Not specified',
                     (!$teacher->teacherProfile ? 'No Profile' : ($teacher->teacherProfile->is_active ? 'Active' : 'Inactive'))

@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\ChessSession;
 use App\Models\TeacherAvailability;
 use App\Http\Controllers\SessionAssignmentController;
+use App\Notifications\AdditionalSessionBooked;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
@@ -157,7 +158,7 @@ class StudentBookingController extends Controller
             'selected_date' => 'required|date|after_or_equal:today',
             'selected_time' => 'required',
             'duration' => 'required|in:30,45,60',
-            'session_type' => 'required|in:children,adult,kids,all'
+            'session_type' => 'required|in:adult,kids'
         ]);
 
         $student = auth()->user();
@@ -434,6 +435,20 @@ class StudentBookingController extends Controller
             'teacher_id' => $teacher->id,
             'scheduled_at' => $scheduledAt
         ]);
+        
+        // Send notification to student about the additional session booking
+        try {
+            $student->notify(new \App\Notifications\AdditionalSessionBooked($session, $teacher, $payment));
+            Log::info('Additional session booking notification sent', [
+                'student_id' => $student->id,
+                'session_id' => $session->id
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send additional session booking notification', [
+                'error' => $e->getMessage(),
+                'student_id' => $student->id
+            ]);
+        }
 
         return $session;
     }

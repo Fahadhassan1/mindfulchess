@@ -45,7 +45,7 @@ class SessionCompleted extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $teacherName = $this->session->teacher->name;
-        $sessionDate = $this->session->completed_at->format('F j, Y \a\t g:i A');
+        $sessionDate = $this->session->completed_at ? $this->session->completed_at->format('F j, Y \a\t g:i A') : now()->format('F j, Y \a\t g:i A');
         
         $message = (new MailMessage)
             ->subject('Session Completed - Thank You!')

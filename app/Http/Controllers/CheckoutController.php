@@ -28,10 +28,8 @@ class CheckoutController extends Controller
     
     // Session types
     const SESSION_TYPES = [
-        'children' => 'Children',
         'adult' => 'Adult',
         'kids' => 'Kids',
-        'all' => 'All'
     ];
     
     /**
@@ -40,7 +38,7 @@ class CheckoutController extends Controller
     public function index(Request $request)
     {
         $duration = $request->query('duration', 60);
-        $sessionType = $request->query('session_type', 'children');
+        $sessionType = $request->query('session_type', 'kids');
         
         // Validate that the duration is one of the allowed values
         if (!array_key_exists($duration, self::SESSION_PRICES)) {
@@ -49,7 +47,7 @@ class CheckoutController extends Controller
         
         // Validate that the session type is one of the allowed values
         if (!array_key_exists($sessionType, self::SESSION_TYPES)) {
-            $sessionType = 'children'; // Default to children session if invalid type
+            $sessionType = 'kids'; // Default to kids session if invalid type
         }
         
         $sessionDetails = self::SESSION_PRICES[$duration];
@@ -82,7 +80,7 @@ class CheckoutController extends Controller
         
         // Validate session type
         if (!array_key_exists($sessionType, self::SESSION_TYPES)) {
-            $sessionType = 'children'; // Default to children if invalid
+            $sessionType = 'kids'; // Default to kids if invalid
         }
         
         // Validate that the duration is one of the allowed values
@@ -128,6 +126,20 @@ class CheckoutController extends Controller
                     'email' => $request->email,
                     'name' => $request->card_holder,
                 ]);
+            }
+            
+            // Attach the payment method to the customer before using it
+            try {
+                $paymentMethod = PaymentMethod::retrieve($request->payment_method);
+                $paymentMethod->attach(['customer' => $customer->id]);
+                
+                // Set as the customer's default payment method
+                Customer::update($customer->id, [
+                    'invoice_settings' => ['default_payment_method' => $request->payment_method]
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error attaching payment method to customer: ' . $e->getMessage());
+                // Continue with payment processing even if setting default fails
             }
             
             // Prepare metadata
@@ -219,6 +231,48 @@ class CheckoutController extends Controller
                     // Get the customer information from the payment intent
                     $customer = Customer::retrieve($paymentIntent->customer);
                     
+                    // If payment method exists, ensure it's attached to the customer and set as default
+                    if ($paymentIntent->payment_method) {
+                        try {
+                            $paymentMethod = PaymentMethod::retrieve($paymentIntent->payment_method);
+                            
+                            // Check if the payment method is already attached to this customer
+                            $isAttached = false;
+                            try {
+                                $existingPaymentMethods = PaymentMethod::all([
+                                    'customer' => $customer->id,
+                                    'type' => 'card'
+                                ]);
+                                foreach ($existingPaymentMethods->data as $method) {
+                                    if ($method->id === $paymentIntent->payment_method) {
+                                        $isAttached = true;
+                                        break;
+                                    }
+                                }
+                            } catch (\Exception $e) {
+                                // Ignore errors in checking existing methods
+                            }
+                            
+                            // Attach only if not already attached
+                            if (!$isAttached) {
+                                $paymentMethod->attach(['customer' => $customer->id]);
+                            }
+                            
+                            // Set as default payment method
+                            Customer::update($customer->id, [
+                                'invoice_settings' => ['default_payment_method' => $paymentIntent->payment_method]
+                            ]);
+                            
+                            Log::info('Payment method set as default for customer', [
+                                'customer_id' => $customer->id,
+                                'payment_method_id' => $paymentIntent->payment_method
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Error setting payment method as default: ' . $e->getMessage());
+                            // Continue processing even if setting default fails
+                        }
+                    }
+                    
                     // Check if we already have this payment recorded (to avoid duplicates)
                     $existingPayment = Payment::where('payment_id', $paymentIntent->id)->first();
                     
@@ -226,7 +280,7 @@ class CheckoutController extends Controller
                         // Determine session details
                         $duration = $paymentIntent->metadata['duration'] ?? 60;
                         $sessionDetails = self::SESSION_PRICES[$duration];
-                        $sessionType = $paymentIntent->metadata['session_type'] ?? 'children';
+                        $sessionType = $paymentIntent->metadata['session_type'] ?? 'kids';
                         
                         // Get coupon information if available
                         $couponCode = $paymentIntent->metadata['coupon_code'] ?? null;
@@ -356,7 +410,7 @@ class CheckoutController extends Controller
             // Use a database transaction to ensure both payment and session are saved together
             return DB::transaction(function () use ($paymentIntent, $customer, $sessionType, $sessionDetails, $couponCode, $coupon, $discountAmount) {
                 // Check if this is the customer's first payment
-                $isFirstPayment = !Payment::where('customer_email', $customer->email)
+                $isFirstPayment = Payment::where('customer_email', $customer->email)
                                          ->where('status', 'succeeded')
                                          ->exists();
                 
@@ -385,24 +439,60 @@ class CheckoutController extends Controller
                     'paid_at' => now(),
                 ]);
                 
-                // If this is not the first payment, set it as default (latest payment becomes default)
-                if (!$isFirstPayment && $paymentMethodId) {
+                // Set payment method as default in both our database and Stripe
+                if ($paymentMethodId) {
                     $payment->setAsDefault();
+                    
+                    // Make sure the payment method is attached to the customer in Stripe
+                    try {
+                        // Check if the payment method is already attached
+                        $isAttached = false;
+                        $existingPaymentMethods = PaymentMethod::all([
+                            'customer' => $customer->id,
+                            'type' => 'card'
+                        ]);
+                        
+                        foreach ($existingPaymentMethods->data as $method) {
+                            if ($method->id === $paymentMethodId) {
+                                $isAttached = true;
+                                break;
+                            }
+                        }
+                        
+                        // If not attached, attach it
+                        if (!$isAttached) {
+                            $paymentMethod = PaymentMethod::retrieve($paymentMethodId);
+                            $paymentMethod->attach(['customer' => $customer->id]);
+                        }
+                        
+                        // Set as default payment method in Stripe
+                        Customer::update($customer->id, [
+                            'invoice_settings' => ['default_payment_method' => $paymentMethodId]
+                        ]);
+                        
+                        Log::info('Payment method set as default in Stripe', [
+                            'payment_method_id' => $paymentMethodId,
+                            'customer_id' => $customer->id
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Error setting payment method as default in Stripe: ' . $e->getMessage());
+                        // Continue processing even if setting default fails
+                    }
                 }
                 
                 Log::info('Payment saved with default status', [
                     'payment_id' => $payment->id,
                     'customer_email' => $customer->email,
                     'is_default' => $payment->is_default,
-                    'is_first_payment' => $isFirstPayment
+                    'payment_method_id' => $paymentMethodId
                 ]);
                 
                 // Create the chess session record (without student_id for now)
                 $chessSession = ChessSession::create([
                     'payment_id' => $payment->id,
                     'session_type' => $sessionType,
-                    'duration' => (int) $paymentIntent->metadata['duration'] ?? 60,
-                    'session_name' => $sessionDetails['name'],
+                    'duration' => (int) ($paymentIntent->metadata['duration'] ?? 60),
+                    'session_name' => $sessionDetails['name'] ?? ('Chess Session - ' . $sessionType),
                     'status' => 'booked',
                 ]);
                 

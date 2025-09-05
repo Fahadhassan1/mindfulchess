@@ -108,12 +108,18 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">
-                                            {{ $session->student->name }}
-                                        </div>
-                                        <div class="text-sm text-gray-500">
-                                            {{ $session->student->email }}
-                                        </div>
+                                        @if($session->student)
+                                            <div class="text-sm font-medium text-gray-900">
+                                                {{ $session->student->name }}
+                                            </div>
+                                            <div class="text-sm text-gray-500">
+                                                {{ $session->student->email }}
+                                            </div>
+                                        @else
+                                            <div class="text-sm text-gray-500">
+                                                No student assigned
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($session->teacher)

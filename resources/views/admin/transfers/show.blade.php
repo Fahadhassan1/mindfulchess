@@ -135,31 +135,53 @@
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Student</label>
-                                <p class="mt-1 text-sm text-gray-900">{{ $transfer->session->student->name }}</p>
-                                <p class="text-sm text-gray-500">{{ $transfer->session->student->email }}</p>
+                                @if($transfer->session && $transfer->session->student)
+                                    <p class="mt-1 text-sm text-gray-900">{{ $transfer->session->student->name }}</p>
+                                    <p class="text-sm text-gray-500">{{ $transfer->session->student->email }}</p>
+                                @else
+                                    <p class="mt-1 text-sm text-gray-500">Student information not available</p>
+                                @endif
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Scheduled Time</label>
-                                                                <p class="text-sm font-medium text-gray-500">Session Date</p>
-                                <p class="mt-1 text-sm text-gray-900">{{ $transfer->session->scheduled_at->format('l, F j, Y \a	 g:i A') }}</p>
+                                <p class="text-sm font-medium text-gray-500">Session Date</p>
+                                <p class="mt-1 text-sm text-gray-900">
+                                    @if($transfer->session && $transfer->session->scheduled_at)
+                                        {{ $transfer->session->scheduled_at->format('l, F j, Y \a\t g:i A') }}
+                                    @else
+                                        Not scheduled
+                                    @endif
+                                </p>
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Duration</label>
-                                <p class="mt-1 text-sm text-gray-900">{{ $transfer->session->duration }} minutes</p>
+                                <p class="mt-1 text-sm text-gray-900">
+                                    @if($transfer->session)
+                                        {{ $transfer->session->duration }} minutes
+                                    @else
+                                        N/A
+                                    @endif
+                                </p>
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Session Status</label>
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                    @if($transfer->session->status == 'pending') bg-yellow-100 text-yellow-800
-                                    @elseif($transfer->session->status == 'confirmed') bg-blue-100 text-blue-800
-                                    @elseif($transfer->session->status == 'completed') bg-green-100 text-green-800
-                                    @elseif($transfer->session->status == 'cancelled') bg-red-100 text-red-800
-                                    @endif">
-                                    {{ ucfirst($transfer->session->status) }}
-                                </span>
+                                @if($transfer->session)
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                        @if($transfer->session->status == 'pending') bg-yellow-100 text-yellow-800
+                                        @elseif($transfer->session->status == 'confirmed') bg-blue-100 text-blue-800
+                                        @elseif($transfer->session->status == 'completed') bg-green-100 text-green-800
+                                        @elseif($transfer->session->status == 'cancelled') bg-red-100 text-red-800
+                                        @endif">
+                                        {{ ucfirst($transfer->session->status) }}
+                                    </span>
+                                @else
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                        Unknown
+                                    </span>
+                                @endif
                             </div>
                             
                             <div class="mt-4">
@@ -191,13 +213,19 @@
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Payment Status</label>
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                    @if($transfer->session->payment->status == 'succeeded') bg-green-100 text-green-800
-                                    @elseif($transfer->session->payment->status == 'pending') bg-yellow-100 text-yellow-800
-                                    @else bg-red-100 text-red-800
-                                    @endif">
-                                    {{ ucfirst($transfer->session->payment->status) }}
-                                </span>
+                                @if($transfer->session && $transfer->session->payment)
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                        @if($transfer->session->payment->status == 'succeeded') bg-green-100 text-green-800
+                                        @elseif($transfer->session->payment->status == 'pending') bg-yellow-100 text-yellow-800
+                                        @else bg-red-100 text-red-800
+                                        @endif">
+                                        {{ ucfirst($transfer->session->payment->status) }}
+                                    </span>
+                                @else
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                        Unknown
+                                    </span>
+                                @endif
                             </div>
                             
                             <div class="mt-4">
@@ -217,7 +245,7 @@
                         
                         <div class="space-y-4">
                             <a href="{{ route('admin.transfers.invoice', $transfer) }}" target="_blank" 
-                               class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded inline-block">
+                               class="bg-primary-800 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded">
                                 View Invoice
                             </a>
                             

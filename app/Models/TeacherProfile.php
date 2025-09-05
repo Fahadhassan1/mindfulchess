@@ -16,7 +16,6 @@ class TeacherProfile extends Model
      */
     protected $fillable = [
         'user_id',
-        'qualification',
         'teaching_type',
         'stripe_account_id',
         'bio',

@@ -6,6 +6,7 @@ use App\Models\ChessSession;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Notifications\SessionAssignmentRequest;
+use App\Notifications\SessionAssigned;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -48,11 +49,7 @@ class SessionAssignmentController extends Controller
         // Get all active teachers who match the session type
         $teachers = User::role('teacher')
             ->whereHas('teacherProfile', function ($query) use ($session) {
-                $query->where('is_active', true)
-                      ->where(function($q) use ($session) {
-                          $q->where('teaching_type', $session->session_type)
-                            ->orWhere('teaching_type', 'all');
-                      });
+                $query->where('is_active', true);
             })
             ->get();
         
@@ -146,6 +143,23 @@ class SessionAssignmentController extends Controller
                             'teacher_id' => $teacherId
                         ]);
                     }
+                }
+                
+                // Send email notification to student about teacher assignment
+                $teacher = User::find($teacherId);
+                try {
+                    $student->notify(new \App\Notifications\SessionAssigned($session, $teacher));
+                    Log::info('Session assignment notification sent to student', [
+                        'student_id' => $student->id,
+                        'student_email' => $student->email,
+                        'session_id' => $session->id,
+                        'teacher_id' => $teacher->id
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send session assignment notification to student', [
+                        'student_id' => $student->id,
+                        'error' => $e->getMessage()
+                    ]);
                 }
             }
             

@@ -33,11 +33,7 @@
                 </div>
 
                 <div class="p-6">
-                    @if(session('success'))
-                        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-                            <p>{{ session('success') }}</p>
-                        </div>
-                    @endif
+
 
                     <!-- Session Information -->
                     <div class="bg-gray-50 rounded-md p-4 mb-6">
@@ -143,14 +139,7 @@
                             ← View Session Details
                         </a>
                         
-                        @if($homework->teacher)
-                            <div class="text-sm text-gray-600">
-                                Need help? Contact your teacher: 
-                                <a href="mailto:{{ $homework->teacher->email }}" class="text-purple-600 hover:text-purple-800 font-medium">
-                                    {{ $homework->teacher->email }}
-                                </a>
-                            </div>
-                        @endif
+                    
                     </div>
                 </div>
             </div>

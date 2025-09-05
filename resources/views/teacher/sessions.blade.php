@@ -117,11 +117,6 @@
             <!-- Sessions List -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    @if(session('success'))
-                        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-                            <p>{{ session('success') }}</p>
-                        </div>
-                    @endif
 
                     @if($sessions->isEmpty())
                         <div class="text-center py-12">
@@ -179,7 +174,7 @@
                                                     </div>
                                                     <div class="ml-4">
                                                         <div class="text-sm font-medium text-gray-900">{{ $session->student->name ?? 'Student' }}</div>
-                                                        <div class="text-sm text-gray-500">{{ $session->student->email ?? 'N/A' }}</div>
+                                                        {{-- <div class="text-sm text-gray-500">{{ $session->student->email ?? 'N/A' }}</div> --}}
                                                     </div>
                                                 </div>
                                             </td>
@@ -212,18 +207,14 @@
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 @if($session->payment)
                                                     <div class="text-sm text-gray-900">
-                                                        <div class="font-medium">£{{ number_format($session->payment->amount, 2) }}</div>
                                                         @if($session->transfer)
                                                             <div class="text-xs text-green-600">
-                                                                Your share: £{{ number_format($session->transfer->amount, 2) }}
+                                                                £{{ number_format($session->transfer->amount, 2) }}
                                                             </div>
-                                                            <div class="text-xs {{ $session->transfer->status === 'completed' ? 'text-green-500' : 'text-yellow-500' }}">
-                                                                {{ ucfirst($session->transfer->status) }}
-                                                            </div>
-                                                        @elseif($session->status === 'completed')
-                                                            <div class="text-xs text-yellow-600">Payment processing</div>
+                                                        @elseif($session->status === 'completed' && $session->payment->status === 'paid')
+                                                            <div class="text-xs text-yellow-600">Paid</div>
                                                         @else
-                                                            <div class="text-xs text-gray-500">{{ ucfirst($session->payment->status) }}</div>
+                                                            <div class="text-xs text-gray-500">Not Paid</div>
                                                         @endif
                                                     </div>
                                                 @else

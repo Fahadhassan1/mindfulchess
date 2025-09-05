@@ -18,6 +18,7 @@ use Stripe\Stripe;
 use Stripe\Transfer as StripeTransfer;
 use Stripe\Exception\ApiErrorException;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 class TeacherController extends Controller
 {
@@ -118,8 +119,7 @@ class TeacherController extends Controller
         
         // Validate the request data
         $request->validate([
-            'qualification' => 'nullable|string|max:255',
-            'teaching_type' => 'nullable|string|in:children,adult,kids,all',
+            'teaching_type' => 'nullable|string|in:adult,kids',
             'experience_years' => 'nullable|integer|min:0|max:100',
             'specialties' => 'nullable|string',
             'bio' => 'nullable|string',
@@ -140,7 +140,6 @@ class TeacherController extends Controller
 
         // Update or create teacher profile
         $profileData = $request->only([
-            'qualification',
             'teaching_type',
             'experience_years',
             'bio'
@@ -348,6 +347,8 @@ class TeacherController extends Controller
         $originalStatus = $session->status;
 
         try {
+            DB::beginTransaction();
+
             // Update session status
             $session->update([
                 'status' => 'completed',
@@ -363,9 +364,13 @@ class TeacherController extends Controller
             // Send feedback email to student only if transfer succeeds
             $session->student->notify(new SessionCompleted($session));
 
+            DB::commit();
+
             return redirect()->route('teacher.sessions')
                              ->with('success', 'Session completed successfully! Payment has been transferred to your Stripe account and student notification sent.');
         } catch (\Exception $e) {
+            DB::rollBack();
+
             // Rollback session status if transfer failed
             $session->update([
                 'status' => $originalStatus,

@@ -99,8 +99,8 @@
                     <div class="p-6 bg-emerald-50">
                         <div class="flex items-center">
                             <div class="p-3 rounded-full bg-emerald-500 bg-opacity-75">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24">
+                                    <text x="6" y="18" font-size="16" fill="white" font-family="Arial, Helvetica, sans-serif">£</text>
                                 </svg>
                             </div>
                             <div class="ml-5">

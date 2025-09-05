@@ -2,9 +2,9 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h1 class="font-semibold text-xl text-gray-800 leading-tight">My Payment History</h1>
-            <a href="{{ route('student.payment-methods') }}" class="px-4 py-2 bg-primary-800 text-white rounded-md hover:bg-primary-700 transition duration-200">
+            {{-- <a href="{{ route('student.payment-methods') }}" class="px-4 py-2 bg-primary-800 text-white rounded-md hover:bg-primary-700 transition duration-200">
                 Manage Payment Methods
-            </a>
+            </a> --}}
         </div>
     </x-slot>
     
@@ -12,12 +12,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    @if(session('success'))
-                        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-                            <p>{{ session('success') }}</p>
-                        </div>
-                    @endif
-                    
+
                     @if($payments->isEmpty())
                         <div class="bg-white shadow-md rounded-lg p-8 text-center">
                             <p class="text-gray-500 text-lg">You don't have any payments yet.</p>
@@ -39,10 +34,10 @@
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Date
                                         </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{-- <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Description
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        </th> --}}
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Actions
                                         </th>
                                     </tr>
@@ -69,14 +64,10 @@
                                                 <div class="text-sm text-gray-900">{{ $payment->paid_at->format('M d, Y') }}</div>
                                                 <div class="text-xs text-gray-500">{{ $payment->paid_at->format('h:i A') }}</div>
                                             </td>
-                                            <td class="px-6 py-4">
+                                            {{-- <td class="px-6 py-4">
                                                 <div class="text-sm text-gray-900">Chess Session Payment</div>
-                                                @if($payment->chessSession)
-                                                    <a href="{{ route('student.sessions.show', $payment->chessSession) }}" class="text-xs text-blue-600 hover:text-blue-900">
-                                                        View Session
-                                                    </a>
-                                                @endif
-                                            </td>
+                                               
+                                            </td> --}}
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <a href="{{ route('student.payments.invoice', $payment) }}" class="inline-flex items-center px-3 py-2 border border-transparent text-xs leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue transition ease-in-out duration-150">
                                                     <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
