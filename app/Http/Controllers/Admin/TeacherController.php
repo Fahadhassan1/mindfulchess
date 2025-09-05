@@ -93,7 +93,7 @@ class TeacherController extends Controller
             'stripe_account_id' => 'nullable|string|max:255',
             'bio' => 'nullable|string',
             'experience_years' => 'nullable|integer|min:0',
-            'specialties' => 'nullable|array',
+            'specialties' => 'nullable',
             'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_active' => 'nullable|boolean',
         ]);

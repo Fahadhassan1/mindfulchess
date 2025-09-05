@@ -2,15 +2,12 @@
     <x-slot name="header">
         <div class="flex justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Edit Teacher Profile') }}: {{ $teacher->name }}
+                {{ __('Edit Teacher Profile') }}
             </h2>
             <div>
-                <a href="{{ route('admin.teachers.show', $teacher) }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mr-2">
-                    View Profile
-                </a>
-                <a href="{{ route('admin.teachers.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
-                    Back to Teachers
-                </a>
+            <a href="{{ route('admin.teachers.show', $teacher) }}" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded mr-2">
+                View Profile
+            </a>
             </div>
         </div>
     </x-slot>
@@ -170,7 +167,7 @@
                         </div>
 
                         <div class="flex items-center justify-end mt-6">
-                            <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
                                 Update Teacher Profile
                             </button>
                         </div>
