@@ -119,10 +119,10 @@
             </p>
             
             <div class="order-details">
-                <div class="order-row">
+                {{-- <div class="order-row">
                     <span>Payment ID</span>
                     <span>{{ $paymentId }}</span>
-                </div>
+                </div> --}}
                 <div class="order-row">
                     <span>Customer Name</span>
                     <span>{{ $customerName }}</span>

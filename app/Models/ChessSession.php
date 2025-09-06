@@ -26,7 +26,8 @@ class ChessSession extends Model
         'payment_id',
         'admin_notes',
         'session_type',
-        'session_name'
+        'session_name',
+        'suggested_availability'
     ];
     
     /**
@@ -38,6 +39,7 @@ class ChessSession extends Model
         'scheduled_at' => 'datetime',
         'completed_at' => 'datetime',
         'amount' => 'decimal:2',
+        'suggested_availability' => 'array',
     ];
     
     /**

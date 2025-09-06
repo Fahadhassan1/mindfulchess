@@ -64,7 +64,7 @@ class SessionAssignmentRequest extends Notification implements ShouldQueue
             ]
         );
 
-        return (new MailMessage)
+        $emailMessage = (new MailMessage)
             ->subject('New Chess Session Assignment Request')
             ->greeting('Hello ' . $notifiable->name . '!')
             ->line('A new chess session is available for assignment.')
@@ -74,11 +74,54 @@ class SessionAssignmentRequest extends Notification implements ShouldQueue
             ->line('- Name: ' . $this->session->session_name)
             ->line('**Student Information:**')
             ->line('- Name: ' . $this->studentInfo['name'])
-            ->line('- Email: ' . $this->studentInfo['email'])
-            ->action('Accept This Session', $url)
+            ->line('- Email: ' . $this->studentInfo['email']);
+            
+        // Add suggested availability information if available
+        if (!empty($this->session->suggested_availability)) {
+            $emailMessage->line('**Student\'s Suggested Availability:**');
+            
+            $availabilityInfo = [];
+            if (isset($this->session->suggested_availability['preferences'])) {
+                $preferences = $this->session->suggested_availability['preferences'];
+                foreach ($preferences as $preference) {
+                    $date = $preference['date'] ?? 'Unknown date';
+                    $times = $preference['times'] ?? [];
+                    if (!empty($times)) {
+                        $timeList = implode(', ', array_map(function($time) {
+                            return date('g:i A', strtotime($time));
+                        }, $times));
+                        $availabilityInfo[] = "- " . date('l, F j', strtotime($date)) . ": " . $timeList;
+                    }
+                }
+            } else {
+                foreach ($this->session->suggested_availability as $item) {
+                    if (isset($item['date']) && isset($item['times'])) {
+                        $date = $item['date'];
+                        $times = $item['times'];
+                        $timeList = implode(', ', array_map(function($time) {
+                            return date('g:i A', strtotime($time));
+                        }, $times));
+                        $availabilityInfo[] = "- " . date('l, F j', strtotime($date)) . ": " . $timeList;
+                    }
+                }
+            }
+            
+            if (!empty($availabilityInfo)) {
+                foreach ($availabilityInfo as $info) {
+                    $emailMessage->line($info);
+                }
+            } else {
+                $emailMessage->line('- No specific times provided');
+            }
+        }
+            
+        $emailMessage->action('Accept This Session', $url)
+            ->line('If you accept, you will be asked to select a time from the student\'s suggested availability.')
             ->line('This link will expire in 7 days. If you accept this session, you will be assigned as the teacher for this student.')
             ->line('Note: If another teacher accepts this session first, you will be notified when you attempt to accept it.')
             ->salutation('Thank you for your contribution to Mindful Chess!');
+            
+        return $emailMessage;
     }
 
     /**

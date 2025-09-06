@@ -19,6 +19,9 @@
                     <span class="font-medium">Session Type:</span> {{ ucfirst($session->session_type) }}<br>
                     <span class="font-medium">Duration:</span> {{ $session->duration }} minutes<br>
                     <span class="font-medium">Session Name:</span> {{ $session->session_name }}
+                    @if($session->scheduled_at)
+                    <br><span class="font-medium">Scheduled Time:</span> {{ $session->scheduled_at->format('l, F j, Y \a\t g:i A') }}
+                    @endif
                 </p>
                 
                 <h3 class="font-semibold text-gray-700 mb-2">Student Information</h3>

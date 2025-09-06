@@ -40,13 +40,62 @@ class TeacherController extends Controller
     public function index()
     {
         $teacher = Auth::user();
+        
+        // Get assigned students count
         $assignedStudents = User::role('student')
             ->whereHas('studentProfile', function($query) use ($teacher) {
                 $query->where('teacher_id', $teacher->id);
             })
             ->count();
             
-        return view('teacher.dashboard', compact('teacher', 'assignedStudents'));
+        // Get sessions data for statistics
+        $sessions = ChessSession::where('teacher_id', $teacher->id)->get();
+        $totalSessions = $sessions->count();
+        
+        // Group sessions by student to find recurring students
+        $studentSessions = $sessions->groupBy('student_id');
+        $totalStudents = $studentSessions->count();
+        $recurringStudents = $studentSessions->filter(function ($sessions) {
+            return $sessions->count() > 1;
+        })->count();
+        
+        // Calculate recurring student percentage
+        $recurringPercentage = $totalStudents > 0 
+            ? round(($recurringStudents / $totalStudents) * 100, 2) 
+            : 0;
+            
+        // Calculate monthly session counts for the past 6 months
+        $monthlySessions = [];
+        $monthlyLabels = [];
+        $monthlyData = [];
+        
+        for ($i = 5; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $monthName = $month->format('M Y');
+            $monthlyLabels[] = $monthName;
+            
+            $startOfMonth = $month->copy()->startOfMonth();
+            $endOfMonth = $month->copy()->endOfMonth();
+            
+            $count = $sessions->filter(function ($session) use ($startOfMonth, $endOfMonth) {
+                return $session->created_at >= $startOfMonth && $session->created_at <= $endOfMonth;
+            })->count();
+            
+            $monthlyData[] = $count;
+            $monthlySessions[$monthName] = $count;
+        }
+        
+        return view('teacher.dashboard', compact(
+            'teacher', 
+            'assignedStudents',
+            'totalSessions',
+            'totalStudents',
+            'recurringStudents',
+            'recurringPercentage',
+            'monthlySessions',
+            'monthlyLabels',
+            'monthlyData'
+        ));
     }
 
     /**
@@ -88,10 +137,32 @@ class TeacherController extends Controller
         // Get paginated results
         $students = $query->paginate(10);
         
+        // Get all sessions for this teacher
+        $sessions = ChessSession::where('teacher_id', $teacher->id)->get();
+        
+        // Calculate session stats for each student
+        $studentStats = [];
+        foreach ($students as $student) {
+            // Get all sessions for this student with this teacher
+            $studentSessions = $sessions->where('student_id', $student->id);
+            $sessionCount = $studentSessions->count();
+            
+            // Check if the student is recurring (more than one session)
+            $isRecurring = $sessionCount > 1;
+            
+            // Add stats to the array
+            $studentStats[$student->id] = [
+                'session_count' => $sessionCount,
+                'is_recurring' => $isRecurring,
+                'first_session' => $sessionCount > 0 ? $studentSessions->sortBy('created_at')->first()->created_at->format('M d, Y') : null,
+                'last_session' => $sessionCount > 0 ? $studentSessions->sortByDesc('created_at')->first()->created_at->format('M d, Y') : null,
+            ];
+        }
+        
         // Get all possible student levels for filter dropdown
         $levels = ['beginner', 'intermediate', 'advanced'];
         
-        return view('teacher.students', compact('students', 'levels', 'teacher'));
+        return view('teacher.students', compact('students', 'levels', 'teacher', 'studentStats'));
     }
 
     /**
@@ -276,6 +347,11 @@ class TeacherController extends Controller
         // Filter by status if provided
         if ($request->filled('status')) {
             $sessionsQuery->where('status', $request->status);
+        }
+        
+        // Filter by student if provided
+        if ($request->filled('student_id')) {
+            $sessionsQuery->where('student_id', $request->student_id);
         }
         
         // Filter by date range if provided

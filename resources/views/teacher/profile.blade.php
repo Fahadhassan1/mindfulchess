@@ -59,7 +59,7 @@
 
 
                             <!-- Teaching Type -->
-                            <div>
+                            {{-- <div>
                                 <x-input-label for="teaching_type" :value="__('Teaching Type')" />
                                 <select id="teaching_type" name="teaching_type" 
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
@@ -68,7 +68,7 @@
                                     <option value="kids" {{ old('teaching_type', $teacher->teacherProfile->teaching_type ?? '') == 'kids' ? 'selected' : '' }}>Kids</option>
                                 </select>
                                 <x-input-error class="mt-2" :messages="$errors->get('teaching_type')" />
-                            </div>
+                            </div> --}}
 
                             <!-- Experience Years -->
                             <div>
@@ -88,14 +88,14 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('specialties')" />
                             </div>
 
-                            <!-- Stripe Account ID -->
+                            {{-- <!-- Stripe Account ID -->
                             <div>
                                 <x-input-label for="stripe_account_id" :value="__('Payment Account ID')" />
                                 <x-text-input id="stripe_account_id" name="stripe_account_id" type="text" class="mt-1 block w-full bg-gray-100" 
                                     :value="$teacher->teacherProfile->stripe_account_id ?? 'Not set by admin yet'" disabled readonly />
                                 <p class="text-sm text-gray-500 mt-1">For receiving payments (provided by admin only)</p>
                                 <input type="hidden" name="stripe_account_id" value="{{ $teacher->teacherProfile->stripe_account_id ?? '' }}">
-                            </div>
+                            </div> --}}
 
                             <!-- Bio -->
                             <div>

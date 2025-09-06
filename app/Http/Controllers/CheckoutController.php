@@ -68,13 +68,26 @@ class CheckoutController extends Controller
      */
     public function processPayment(Request $request)
     {
+
         $request->validate([
             'email' => 'required|email',
             'card_holder' => 'required|string',
             'duration' => 'required|in:30,45,60',
             'session_type' => 'required|string',
+            'preferred_times' => 'required|json',
         ]);
         
+         // Check if the user is already registered
+        if ($request->input('email')) {
+            // Check if a user with this email already exists
+            $existingUser = User::where('email', $request->input('email'))->first();
+
+            if ($existingUser) {
+                // Redirect to login page with message
+                return back()->with('error', 'You already have an account with us. Please login to book a session with your preferred teacher.');
+            }
+        }
+
         $duration = $request->input('duration');
         $sessionType = $request->input('session_type');
         
@@ -179,7 +192,8 @@ class CheckoutController extends Controller
             // Handle the payment result based on the payment intent status
             if ($paymentIntent->status === 'succeeded') {
                 // Save the payment and session details to our database
-                $this->savePaymentInformation($paymentIntent, $customer, $sessionType, $sessionDetails, $appliedCoupon, $coupon ?? null, $discountAmount ?? 0);
+                $suggestedAvailability = json_decode($request->preferred_times, true);
+                $this->savePaymentInformation($paymentIntent, $customer, $sessionType, $sessionDetails, $appliedCoupon, $coupon ?? null, $discountAmount ?? 0, $suggestedAvailability);
                 
                 $viewData = [
                     'paymentId' => $paymentIntent->id,
@@ -198,6 +212,9 @@ class CheckoutController extends Controller
                 
                 return view('checkout-success', $viewData);
             } elseif ($paymentIntent->status === 'requires_action') {
+                // Store the preferred times in session before redirecting for 3D Secure authentication
+                session(['preferred_times' => $request->preferred_times]);
+                
                 // Redirect for 3D Secure authentication if needed
                 return redirect($paymentIntent->next_action->redirect_to_url->url);
             } else {
@@ -292,7 +309,13 @@ class CheckoutController extends Controller
                         }
                         
                         // Save payment information (this also handles creating student account and sending email)
-                        $this->savePaymentInformation($paymentIntent, $customer, $sessionType, $sessionDetails, $couponCode, $coupon, $discountAmount);
+                        // If we have saved preferred times in session, retrieve them
+                        $suggestedAvailability = null;
+                        if (session()->has('preferred_times')) {
+                            $suggestedAvailability = json_decode(session('preferred_times'), true);
+                        }
+                        
+                        $this->savePaymentInformation($paymentIntent, $customer, $sessionType, $sessionDetails, $couponCode, $coupon, $discountAmount, $suggestedAvailability);
                     }
                     
                     $viewData = [
@@ -404,11 +427,11 @@ class CheckoutController extends Controller
      * @param float $discountAmount
      * @return \App\Models\Payment|null
      */
-    protected function savePaymentInformation($paymentIntent, $customer, $sessionType, $sessionDetails, $couponCode = null, $coupon = null, $discountAmount = 0)
+    protected function savePaymentInformation($paymentIntent, $customer, $sessionType, $sessionDetails, $couponCode = null, $coupon = null, $discountAmount = 0, $suggestedAvailability = null)
     {
         try {
             // Use a database transaction to ensure both payment and session are saved together
-            return DB::transaction(function () use ($paymentIntent, $customer, $sessionType, $sessionDetails, $couponCode, $coupon, $discountAmount) {
+            return DB::transaction(function () use ($paymentIntent, $customer, $sessionType, $sessionDetails, $couponCode, $coupon, $discountAmount, $suggestedAvailability) {
                 // Check if this is the customer's first payment
                 $isFirstPayment = Payment::where('customer_email', $customer->email)
                                          ->where('status', 'succeeded')
@@ -494,6 +517,7 @@ class CheckoutController extends Controller
                     'duration' => (int) ($paymentIntent->metadata['duration'] ?? 60),
                     'session_name' => $sessionDetails['name'] ?? ('Chess Session - ' . $sessionType),
                     'status' => 'booked',
+                    'suggested_availability' => $suggestedAvailability,
                 ]);
                 
                 // Prepare data for email

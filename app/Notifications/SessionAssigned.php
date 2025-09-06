@@ -57,8 +57,14 @@ class SessionAssigned extends Notification implements ShouldQueue
             ->line('Session details:')
             ->line('- Session: ' . $this->session->session_name)
             ->line('- Duration: ' . $this->session->duration . ' minutes')
-            ->line('- Teacher: ' . $this->teacher->name)
-            ->action('View Session Details', $teacherProfileUrl)
+            ->line('- Teacher: ' . $this->teacher->name);
+            
+        // Add scheduled time if available
+        if ($this->session->scheduled_at) {
+            $message->line('- Scheduled Time: ' . $this->session->scheduled_at->format('l, F j, Y \a\t g:i A'));
+        }
+        
+        $message->action('View Session Details', $teacherProfileUrl)
             ->line('Please log in to your student portal to see all details and communicate with your teacher.');
 
         return $message;

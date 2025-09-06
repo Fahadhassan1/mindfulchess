@@ -203,7 +203,7 @@ class StudentBookingController extends Controller
                 
                 if ($result['success']) {
                     // Create the chess session
-                    $session = $this->createChessSession($result['payment'], $student, $teacher, $duration, $request->session_type, $scheduledAt);
+                    $session = $this->createChessSession($result['payment'], $student, $teacher, $duration, $request->session_type, $scheduledAt, null);
                     
                     return response()->json([
                         'success' => true,
@@ -398,7 +398,7 @@ class StudentBookingController extends Controller
 
                 // Create session
                 $scheduledAt = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->time);
-                $session = $this->createChessSession($payment, $student, $teacher, $duration, $request->session_type, $scheduledAt);
+                $session = $this->createChessSession($payment, $student, $teacher, $duration, $request->session_type, $scheduledAt, null);
 
                 return redirect()->route('student.sessions.show', $session)->with('success', 'Session booked successfully!');
             }
@@ -414,7 +414,7 @@ class StudentBookingController extends Controller
     /**
      * Create a chess session
      */
-    private function createChessSession($payment, $student, $teacher, $duration, $sessionType, $scheduledAt)
+    private function createChessSession($payment, $student, $teacher, $duration, $sessionType, $scheduledAt, $suggestedAvailability = null)
     {
         $sessionDetails = self::SESSION_PRICES[$duration];
 
@@ -427,6 +427,7 @@ class StudentBookingController extends Controller
             'student_id' => $student->id,
             'teacher_id' => $teacher->id,
             'scheduled_at' => $scheduledAt,
+            'suggested_availability' => $suggestedAvailability,
         ]);
 
         Log::info('Additional session created', [

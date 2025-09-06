@@ -4,6 +4,13 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Teacher Management') }}
             </h2>
+            <a href="{{ route('admin.teachers.statistics') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                    <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                </svg>
+                View Statistics
+            </a>
         </div>
     </x-slot>
 
@@ -66,8 +73,9 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
 
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teaching Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Sessions</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -75,9 +83,6 @@
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $teacher->name }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $teacher->email }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-
-                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($teacher->teacherProfile && $teacher->teacherProfile->teaching_type)
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -89,6 +94,11 @@
                                         @else
                                             Not specified
                                         @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 inline-flex text-sm leading-5 font-medium rounded-full {{ $teacher->sessions_count > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600' }}">
+                                            {{ $teacher->sessions_count }}
+                                        </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if(!$teacher->teacherProfile)
@@ -105,9 +115,10 @@
                                             </span>
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <td class="px-6 text-right py-4 whitespace-nowrap text-sm font-medium">
                                         <a href="{{ route('admin.teachers.show', $teacher) }}" class="text-green-600 hover:text-green-900 mr-2">View</a>
                                         <a href="{{ route('admin.teachers.edit', $teacher) }}" class="text-blue-600 hover:text-blue-900 mr-2">Edit</a>
+                                        <a href="{{ route('admin.teachers.statistics.show', $teacher) }}" class="text-purple-600 hover:text-purple-900 mr-2">Stats</a>
                                         
                                         <form action="{{ route('admin.teachers.toggle-active', $teacher) }}" method="POST" class="inline-block">
                                             @csrf

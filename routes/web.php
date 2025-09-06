@@ -30,6 +30,9 @@ Route::get('/sessions/assign/{session}', [App\Http\Controllers\SessionAssignment
     ->name('sessions.assign')
     ->middleware(['signed']); // This ensures the URL signature is valid
 
+Route::post('/sessions/confirm-time/{session}', [App\Http\Controllers\SessionAssignmentController::class, 'confirmSessionTime'])
+    ->name('sessions.confirm-time');
+
 // Default dashboard route - redirects based on role
 Route::get('/dashboard', function () {
     if (auth()->check()) {
@@ -64,6 +67,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Teacher management routes
     Route::get('/teachers', [App\Http\Controllers\Admin\TeacherController::class, 'index'])->name('teachers.index');
     Route::get('/teachers/export', [App\Http\Controllers\Admin\TeacherController::class, 'export'])->name('teachers.export');
+    Route::get('/teachers/statistics', [App\Http\Controllers\Admin\TeacherController::class, 'statistics'])->name('teachers.statistics');
+    Route::get('/teachers/{teacher}/statistics', [App\Http\Controllers\Admin\TeacherController::class, 'teacherStatistics'])->name('teachers.statistics.show');
     Route::get('/teachers/{teacher}', [App\Http\Controllers\Admin\TeacherController::class, 'show'])->name('teachers.show');
     Route::get('/teachers/{teacher}/edit', [App\Http\Controllers\Admin\TeacherController::class, 'edit'])->name('teachers.edit');
     Route::put('/teachers/{teacher}', [App\Http\Controllers\Admin\TeacherController::class, 'update'])->name('teachers.update');
@@ -169,19 +174,4 @@ Route::middleware('auth')->group(function () {
 });
 
 
-// test route for email previews
-Route::get('/test-email', function () {
-    $toEmail = request('to', 'fahadhassan353@gmail.com'); // Pass ?to=email@example.com
-
-    try {
-        Mail::raw('This is a test email sent directly from a Laravel route!', function ($message) use ($toEmail) {
-            $message->to($toEmail)
-                    ->subject('Laravel Test Email');
-        });
-
-        return response()->json(['message' => "✅ Email sent successfully to {$toEmail}"]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});
 require __DIR__.'/auth.php';

@@ -27,6 +27,35 @@
                         </div>
                     </div>
 
+                    <!-- Stats Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6 border-l-4 border-blue-500">
+                            <h3 class="text-lg font-medium text-gray-900">Total Sessions</h3>
+                            <p class="text-3xl font-bold mt-2 text-blue-600">{{ $totalSessions }}</p>
+                        </div>
+                        
+                        <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6 border-l-4 border-green-500">
+                            <h3 class="text-lg font-medium text-gray-900">Total Students</h3>
+                            <p class="text-3xl font-bold mt-2 text-green-600">{{ $totalStudents }}</p>
+                        </div>
+                        
+                        <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6 border-l-4 border-purple-500">
+                            <h3 class="text-lg font-medium text-gray-900">Recurring Students</h3>
+                            <p class="text-3xl font-bold mt-2 text-purple-600">{{ $recurringStudents }}</p>
+                        </div>
+                        
+                        <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6 border-l-4 border-yellow-500">
+                            <h3 class="text-lg font-medium text-gray-900">Retention Rate</h3>
+                            <div class="flex items-center mt-2">
+                                <p class="text-3xl font-bold text-yellow-600">{{ $recurringPercentage }}%</p>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                <div class="bg-yellow-600 h-2.5 rounded-full" style="width: {{ $recurringPercentage }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Main Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <!-- Students Stats Card -->
                         <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg overflow-hidden text-white">
@@ -100,8 +129,53 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Monthly Sessions Chart -->
+                    <div class="mt-8">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Monthly Sessions</h3>
+                        <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6">
+                            <div style="height: 300px;">
+                                <canvas id="sessionsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- Chart.js Script -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Monthly Sessions Chart
+            const ctx = document.getElementById('sessionsChart').getContext('2d');
+            const sessionsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($monthlyLabels) !!},
+                    datasets: [{
+                        label: 'Sessions',
+                        data: {!! json_encode($monthlyData) !!},
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 </x-app-layout>

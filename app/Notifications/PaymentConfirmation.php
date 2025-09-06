@@ -66,7 +66,7 @@ class PaymentConfirmation extends Notification
             ->greeting('Thank you for your payment!')
             ->line('We are pleased to confirm that your payment for a chess lesson has been successfully processed.')
             ->line('**Payment Details:**')
-            ->line('- Payment ID: ' . $this->paymentData['payment_id'])
+            // ->line('- Payment ID: ' . $this->paymentData['payment_id'])
             ->line('- Amount: £' . number_format($this->paymentData['amount'], 2))
             ->line('- Date: ' . $this->paymentData['paid_at']->format('d M Y, H:i'))
             ->line('**Session Details:**')

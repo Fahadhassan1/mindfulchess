@@ -53,6 +53,11 @@ class TeacherController extends Controller
         // Get paginated results
         $teachers = $query->paginate(10);
         
+        // Load session counts for each teacher
+        $teachers->each(function ($teacher) {
+            $teacher->sessions_count = \App\Models\ChessSession::where('teacher_id', $teacher->id)->count();
+        });
+        
         return view('admin.teachers.index', compact('teachers'));
     }
 
@@ -266,5 +271,192 @@ class TeacherController extends Controller
         };
         
         return response()->stream($callback, 200, $headers);
+    }
+    
+    /**
+     * Display statistics for teachers showing recurring students and session counts.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function statistics(Request $request)
+    {
+        // Get all teachers with their profiles
+        $teachers = User::role('teacher')
+            ->with('teacherProfile')
+            ->get();
+            
+        $teacherStats = [];
+        
+        foreach ($teachers as $teacher) {
+            // Get all sessions for this teacher
+            $sessions = \App\Models\ChessSession::where('teacher_id', $teacher->id)->get();
+            
+            // Count total sessions
+            $totalSessions = $sessions->count();
+            
+            // Group sessions by student to find recurring students
+            $studentSessions = $sessions->groupBy('student_id');
+            
+            // Count students with more than one session (recurring)
+            $recurringStudents = $studentSessions->filter(function ($sessions) {
+                return $sessions->count() > 1;
+            });
+            
+            $recurringStudentCount = $recurringStudents->count();
+            $totalStudentCount = $studentSessions->count();
+            
+            // Calculate recurring student percentage
+            $recurringPercentage = $totalStudentCount > 0 
+                ? round(($recurringStudentCount / $totalStudentCount) * 100, 2) 
+                : 0;
+                
+            // Get top 5 students by session count
+            $topStudents = [];
+            if ($totalStudentCount > 0) {
+                $studentCounts = $studentSessions->map(function ($sessions) {
+                    return [
+                        'student_id' => $sessions->first()->student_id,
+                        'count' => $sessions->count()
+                    ];
+                })->sortByDesc('count')->take(5);
+                
+                foreach ($studentCounts as $stat) {
+                    $student = \App\Models\User::find($stat['student_id']);
+                    if ($student) {
+                        $topStudents[] = [
+                            'name' => $student->name,
+                            'sessions' => $stat['count']
+                        ];
+                    }
+                }
+            }
+            
+            // Calculate monthly session counts for the past 6 months
+            $monthlySessions = [];
+            for ($i = 0; $i < 6; $i++) {
+                $month = now()->subMonths($i);
+                $monthName = $month->format('M Y');
+                $startOfMonth = $month->startOfMonth();
+                $endOfMonth = $month->endOfMonth();
+                
+                $count = $sessions->filter(function ($session) use ($startOfMonth, $endOfMonth) {
+                    return $session->created_at >= $startOfMonth && $session->created_at <= $endOfMonth;
+                })->count();
+                
+                $monthlySessions[$monthName] = $count;
+            }
+            
+            // Reverse the array to show oldest month first
+            $monthlySessions = array_reverse($monthlySessions, true);
+            
+            // Store all stats for this teacher
+            $teacherStats[$teacher->id] = [
+                'id' => $teacher->id,
+                'name' => $teacher->name,
+                'email' => $teacher->email,
+                'is_active' => $teacher->teacherProfile ? $teacher->teacherProfile->is_active : false,
+                'total_sessions' => $totalSessions,
+                'total_students' => $totalStudentCount,
+                'recurring_students' => $recurringStudentCount,
+                'recurring_percentage' => $recurringPercentage,
+                'top_students' => $topStudents,
+                'monthly_sessions' => $monthlySessions
+            ];
+        }
+        
+        return view('admin.teachers.statistics', [
+            'teacherStats' => $teacherStats
+        ]);
+    }
+    
+    /**
+     * Display statistics for a specific teacher.
+     *
+     * @param  \App\Models\User  $teacher
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function teacherStatistics(User $teacher)
+    {
+        if (!$teacher->isTeacher()) {
+            return redirect()->route('admin.teachers.index')->with('error', 'User is not a teacher.');
+        }
+
+        // Get all sessions for this teacher
+        $sessions = \App\Models\ChessSession::where('teacher_id', $teacher->id)->get();
+        
+        // Count total sessions
+        $totalSessions = $sessions->count();
+        
+        // Group sessions by student to find recurring students
+        $studentSessions = $sessions->groupBy('student_id');
+        
+        // Count students with more than one session (recurring)
+        $recurringStudents = $studentSessions->filter(function ($sessions) {
+            return $sessions->count() > 1;
+        });
+        
+        $recurringStudentCount = $recurringStudents->count();
+        $totalStudentCount = $studentSessions->count();
+        
+        // Calculate recurring student percentage
+        $recurringPercentage = $totalStudentCount > 0 
+            ? round(($recurringStudentCount / $totalStudentCount) * 100, 2) 
+            : 0;
+            
+        // Get detailed information about each student
+        $studentDetails = [];
+        foreach ($studentSessions as $studentId => $sessions) {
+            $student = \App\Models\User::find($studentId);
+            if ($student) {
+                $studentDetails[] = [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'email' => $student->email,
+                    'sessions_count' => $sessions->count(),
+                    'first_session' => $sessions->sortBy('created_at')->first()->created_at->format('M d, Y'),
+                    'last_session' => $sessions->sortByDesc('created_at')->first()->created_at->format('M d, Y'),
+                    'is_recurring' => $sessions->count() > 1
+                ];
+            }
+        }
+        
+        // Sort students by session count (highest first)
+        usort($studentDetails, function($a, $b) {
+            return $b['sessions_count'] - $a['sessions_count'];
+        });
+        
+        // Calculate monthly session counts for the past 6 months
+        $monthlySessions = [];
+        $monthlyLabels = [];
+        $monthlyData = [];
+        
+        for ($i = 5; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $monthName = $month->format('M Y');
+            $monthlyLabels[] = $monthName;
+            
+            $startOfMonth = $month->copy()->startOfMonth();
+            $endOfMonth = $month->copy()->endOfMonth();
+            
+            $count = $sessions->filter(function ($session) use ($startOfMonth, $endOfMonth) {
+                return $session->created_at >= $startOfMonth && $session->created_at <= $endOfMonth;
+            })->count();
+            
+            $monthlyData[] = $count;
+            $monthlySessions[$monthName] = $count;
+        }
+        
+        return view('admin.teachers.teacher_statistics', [
+            'teacher' => $teacher,
+            'totalSessions' => $totalSessions,
+            'totalStudents' => $totalStudentCount,
+            'recurringStudents' => $recurringStudentCount,
+            'recurringPercentage' => $recurringPercentage,
+            'studentDetails' => $studentDetails,
+            'monthlySessions' => $monthlySessions,
+            'monthlyLabels' => json_encode($monthlyLabels),
+            'monthlyData' => json_encode($monthlyData)
+        ]);
     }
 }

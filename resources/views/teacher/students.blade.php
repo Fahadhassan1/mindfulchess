@@ -32,17 +32,18 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    {{-- <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th> --}}
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                                    {{-- <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th> --}}
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sessions</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Session</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($students as $student)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $student->name }}</td>
-                                    {{-- <td class="px-6 py-4 whitespace-nowrap">{{ $student->email }}</td> --}}
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         {{ $student->studentProfile->age ?? 'Not specified' }}
                                     </td>
@@ -58,21 +59,42 @@
                                             Not specified
                                         @endif
                                     </td>
-                                    {{-- <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button class="view-details text-green-600 hover:text-green-900" 
-                                                data-student-id="{{ $student->id }}"
-                                                data-student-name="{{ $student->name }}"
-                                                data-student-email="{{ $student->email }}"
-                                                data-student-age="{{ $student->studentProfile->age ?? 'N/A' }}"
-                                                data-student-level="{{ $student->studentProfile->level ? ucfirst($student->studentProfile->level) : 'N/A' }}"
-                                                data-student-school="{{ $student->studentProfile->school ?? 'N/A' }}"
-                                                data-student-parent-name="{{ $student->studentProfile->parent_name ?? 'N/A' }}"
-                                                data-student-parent-email="{{ $student->studentProfile->parent_email ?? 'N/A' }}"
-                                                data-student-parent-phone="{{ $student->studentProfile->parent_phone ?? 'N/A' }}"
-                                                data-student-goals="{{ $student->studentProfile->learning_goals ?? 'No goals specified.' }}">
-                                            View Details
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if(isset($studentStats[$student->id]))
+                                            <span class="px-2 py-1 inline-flex text-sm leading-5 font-medium rounded-full {{ $studentStats[$student->id]['session_count'] > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600' }}">
+                                                {{ $studentStats[$student->id]['session_count'] }}
+                                            </span>
+                                        @else
+                                            <span class="px-2 py-1 inline-flex text-sm leading-5 font-medium rounded-full bg-gray-100 text-gray-600">0</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if(isset($studentStats[$student->id]) && $studentStats[$student->id]['is_recurring'])
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                Recurring
+                                            </span>
+                                        @else
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                One-time
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if(isset($studentStats[$student->id]) && $studentStats[$student->id]['last_session'])
+                                            {{ $studentStats[$student->id]['last_session'] }}
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              
                                         </button>
-                                    </td> --}}
+                                        @if(isset($studentStats[$student->id]) && $studentStats[$student->id]['session_count'] > 0)
+                                            <a href="{{ route('teacher.sessions') }}?student_id={{ $student->id }}" class="text-green-600 hover:text-green-900 ml-3">
+                                                Sessions
+                                            </a>
+                                        @endif
+                                    </td>
                                 </tr>
                                 @endforeach
                                 
@@ -103,6 +125,26 @@
                 <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title"></h3>
                 <div class="mt-2 px-7 py-3">
                     <div class="text-left space-y-3">
+                        <!-- Session Stats Section -->
+                        <div class="mb-4 pb-3 border-b">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Session Statistics</h4>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="bg-gray-50 rounded p-2 text-center">
+                                    <div class="text-xs text-gray-500">Total</div>
+                                    <div class="text-lg font-medium text-blue-600" id="modal-session-count">0</div>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2 text-center">
+                                    <div class="text-xs text-gray-500">Status</div>
+                                    <div class="text-sm font-medium" id="modal-recurring-status">-</div>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2 text-center">
+                                    <div class="text-xs text-gray-500">Last Session</div>
+                                    <div class="text-sm font-medium text-gray-600" id="modal-last-session">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Student Details Section -->
                         <p><strong>Email:</strong> <span id="modal-email"></span></p>
                         <p><strong>Age:</strong> <span id="modal-age"></span></p>
                         <p><strong>Level:</strong> <span id="modal-level"></span></p>
@@ -116,10 +158,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="items-center px-4 py-3">
-                    <button id="closeModal" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                <div class="items-center px-4 py-3 flex space-x-3">
+                    <button id="closeModal" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md flex-grow shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300">
                         Close
                     </button>
+                    <a id="viewSessionsBtn" href="#" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md flex-grow shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        View Sessions
+                    </a>
                 </div>
             </div>
         </div>
@@ -130,10 +175,14 @@
             const modal = document.getElementById('studentModal');
             const viewButtons = document.querySelectorAll('.view-details');
             const closeButton = document.getElementById('closeModal');
+            const viewSessionsBtn = document.getElementById('viewSessionsBtn');
+            const studentStats = @json($studentStats);
             
             // Open modal with student details
             viewButtons.forEach(button => {
                 button.addEventListener('click', function() {
+                    const studentId = this.dataset.studentId;
+                    
                     document.getElementById('modal-title').textContent = this.dataset.studentName;
                     document.getElementById('modal-email').textContent = this.dataset.studentEmail;
                     document.getElementById('modal-age').textContent = this.dataset.studentAge;
@@ -143,6 +192,30 @@
                     document.getElementById('modal-parent-email').textContent = this.dataset.studentParentEmail;
                     document.getElementById('modal-parent-phone').textContent = this.dataset.studentParentPhone;
                     document.getElementById('modal-goals').textContent = this.dataset.studentGoals;
+                    
+                    // Add session statistics
+                    const sessionCount = studentStats[studentId] ? studentStats[studentId].session_count : 0;
+                    document.getElementById('modal-session-count').textContent = sessionCount;
+                    
+                    if (sessionCount > 0) {
+                        const isRecurring = studentStats[studentId].is_recurring;
+                        document.getElementById('modal-recurring-status').textContent = isRecurring ? 'Recurring' : 'One-time';
+                        document.getElementById('modal-recurring-status').className = isRecurring ? 
+                            'text-sm font-medium text-green-600' : 'text-sm font-medium text-yellow-600';
+                        document.getElementById('modal-last-session').textContent = studentStats[studentId].last_session;
+                        
+                        // Enable sessions button
+                        viewSessionsBtn.href = "{{ route('teacher.sessions') }}?student_id=" + studentId;
+                        viewSessionsBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        document.getElementById('modal-recurring-status').textContent = 'No sessions';
+                        document.getElementById('modal-recurring-status').className = 'text-sm font-medium text-gray-500';
+                        document.getElementById('modal-last-session').textContent = '-';
+                        
+                        // Disable sessions button
+                        viewSessionsBtn.href = "#";
+                        viewSessionsBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
                     
                     modal.classList.remove('hidden');
                 });
