@@ -35,12 +35,6 @@ class RouteServiceProvider extends ServiceProvider
 
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
-                
-            // Load debug routes only in local environment
-            if (app()->environment('local')) {
-                Route::middleware('web')
-                    ->group(base_path('routes/debug.php'));
-            }
         });
     }
 }

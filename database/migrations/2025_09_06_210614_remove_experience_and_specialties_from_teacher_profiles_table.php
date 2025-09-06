@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('teacher_profiles', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('profile_image');
+            $table->dropColumn('experience_years');
+            $table->dropColumn('specialties');
         });
     }
 
@@ -22,7 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('teacher_profiles', function (Blueprint $table) {
-            $table->dropColumn('is_active');
+            $table->integer('experience_years')->nullable();
+            $table->json('specialties')->nullable();
         });
     }
 };

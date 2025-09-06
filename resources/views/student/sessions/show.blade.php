@@ -69,14 +69,7 @@
                                 <div>
                                     <p class="font-semibold text-gray-800">{{ $session->teacher->name }}</p>
                                     {{-- <p class="text-gray-600">{{ $session->teacher->email }}</p> --}}
-                                    @if($session->teacher->teacherProfile)
-                                        @if($session->teacher->teacherProfile->experience_years)
-                                            <p class="text-sm text-gray-500 mt-1">{{ $session->teacher->teacherProfile->experience_years }} years of experience</p>
-                                        @endif
-                                        @if($session->teacher->teacherProfile->specialties)
-                                            <p class="text-sm text-gray-500">Specialties: {{ implode(', ', (array) $session->teacher->teacherProfile->specialties) }}</p>
-                                        @endif
-                                    @endif
+                                    <!-- Experience Years and Specialties info has been removed -->
                                 </div>
                             </div>
                         </div>

@@ -70,23 +70,7 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('teaching_type')" />
                             </div> --}}
 
-                            <!-- Experience Years -->
-                            <div>
-                                <x-input-label for="experience_years" :value="__('Years of Experience')" />
-                                <x-text-input id="experience_years" name="experience_years" type="number" class="mt-1 block w-full" 
-                                    :value="old('experience_years', $teacher->teacherProfile->experience_years ?? '')" />
-                                <x-input-error class="mt-2" :messages="$errors->get('experience_years')" />
-                            </div>
-                            
-                            <!-- Specialties -->
-                            <div>
-                                <x-input-label for="specialties" :value="__('Specialties (comma separated)')" />
-                                <x-text-input id="specialties" name="specialties" type="text" class="mt-1 block w-full" 
-                                    :value="old('specialties', $teacher->teacherProfile->specialties ? implode(', ', $teacher->teacherProfile->specialties) : '')" 
-                                    placeholder="e.g. Opening strategies, Endgame tactics, Beginner coaching" />
-                                <p class="text-sm text-gray-500 mt-1">Enter specialties separated by commas</p>
-                                <x-input-error class="mt-2" :messages="$errors->get('specialties')" />
-                            </div>
+                            <!-- Fields for Years of Experience and Specialties have been removed -->
 
                             {{-- <!-- Stripe Account ID -->
                             <div>

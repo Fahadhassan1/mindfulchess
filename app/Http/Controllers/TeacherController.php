@@ -191,8 +191,6 @@ class TeacherController extends Controller
         // Validate the request data
         $request->validate([
             'teaching_type' => 'nullable|string|in:adult,kids',
-            'experience_years' => 'nullable|integer|min:0|max:100',
-            'specialties' => 'nullable|string',
             'bio' => 'nullable|string',
             'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
@@ -212,15 +210,8 @@ class TeacherController extends Controller
         // Update or create teacher profile
         $profileData = $request->only([
             'teaching_type',
-            'experience_years',
             'bio'
         ]);
-        
-        // Handle specialties (convert comma-separated string to array)
-        if ($request->has('specialties') && !empty($request->specialties)) {
-            $specialties = array_map('trim', explode(',', $request->specialties));
-            $profileData['specialties'] = $specialties;
-        }
 
         if (isset($imageName)) {
             $profileData['profile_image'] = $imageName;

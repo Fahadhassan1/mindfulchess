@@ -86,6 +86,52 @@
                 </div>
             </div>
             
+            <!-- Student Milestone Stats -->
+            <div class="mb-6">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-medium mb-4">{{ __("Student Session Milestones") }}</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- 10+ Sessions -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-md font-medium text-gray-800">10+ Sessions</h4>
+                                <div class="mt-2 flex items-baseline">
+                                    <span class="text-2xl font-semibold text-blue-600">{{ $tenPlusSessionsPercentage }}%</span>
+                                    <span class="ml-2 text-sm text-gray-600">of students ({{ $studentsWithTenPlusSessions }} students)</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $tenPlusSessionsPercentage }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 20+ Sessions -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-md font-medium text-gray-800">20+ Sessions</h4>
+                                <div class="mt-2 flex items-baseline">
+                                    <span class="text-2xl font-semibold text-blue-600">{{ $twentyPlusSessionsPercentage }}%</span>
+                                    <span class="ml-2 text-sm text-gray-600">of students ({{ $studentsWithTwentyPlusSessions }} students)</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $twentyPlusSessionsPercentage }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 50+ Sessions -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-md font-medium text-gray-800">50+ Sessions</h4>
+                                <div class="mt-2 flex items-baseline">
+                                    <span class="text-2xl font-semibold text-blue-600">{{ $fiftyPlusSessionsPercentage }}%</span>
+                                    <span class="ml-2 text-sm text-gray-600">of students ({{ $studentsWithFiftyPlusSessions }} students)</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $fiftyPlusSessionsPercentage }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Sessions Chart -->
             <div class="mb-6">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">

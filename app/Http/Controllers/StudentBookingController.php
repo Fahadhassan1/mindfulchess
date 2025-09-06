@@ -27,6 +27,13 @@ class StudentBookingController extends Controller
         '45' => ['price' => 3500, 'name' => 'Online 45 Minutes', 'description' => '45 minute online chess lesson'],
         '30' => ['price' => 2500, 'name' => 'Online 30 Minutes', 'description' => '30 minute online chess lesson']
     ];
+    
+    // Pricing for high-level teachers after 10 sessions (prices in cents)
+    const HIGH_LEVEL_PRICES = [
+        '60' => ['price' => 5000, 'name' => 'Online 1 Hour (Premium)', 'description' => '60 minute online chess lesson with high-level coach'],
+        '45' => ['price' => 3875, 'name' => 'Online 45 Minutes (Premium)', 'description' => '45 minute online chess lesson with high-level coach'],
+        '30' => ['price' => 2750, 'name' => 'Online 30 Minutes (Premium)', 'description' => '30 minute online chess lesson with high-level coach']
+    ];
 
     public function __construct()
     {
@@ -56,7 +63,17 @@ class StudentBookingController extends Controller
         // Check if student has a previous payment method
         $hasStoredPaymentMethod = $this->hasStoredPaymentMethod($student);
         
-        return view('student.booking.calendar', compact('teacher', 'availability', 'hasStoredPaymentMethod'));
+        // Determine if premium pricing applies
+        $usesPremiumPricing = $this->shouldUsePremiumPricing($student, $teacher);
+        
+        // Prepare session prices for the view
+        $sessionPrices = [
+            '30' => ['price' => $this->getSessionPricing($student, $teacher, '30')['price'] / 100, 'name' => '30 minutes'],
+            '45' => ['price' => $this->getSessionPricing($student, $teacher, '45')['price'] / 100, 'name' => '45 minutes'],
+            '60' => ['price' => $this->getSessionPricing($student, $teacher, '60')['price'] / 100, 'name' => '60 minutes']
+        ];
+        
+        return view('student.booking.calendar', compact('teacher', 'availability', 'hasStoredPaymentMethod', 'sessionPrices', 'usesPremiumPricing'));
     }
 
     /**
@@ -70,9 +87,12 @@ class StudentBookingController extends Controller
             'friday' => 5, 'saturday' => 6, 'sunday' => 0
         ];
 
-        // Get the next 30 days
-        $startDate = Carbon::now();
+        // Get the current day and next 30 days
+        $startDate = Carbon::now()->startOfDay();
         $endDate = Carbon::now()->addDays(30);
+        
+        // Log raw availability data from database
+        Log::debug('Raw teacher availability from DB: ' . json_encode($teacher->availability->where('is_available', true)->toArray()));
 
         // Get all existing bookings for this teacher within the date range
         $existingBookings = ChessSession::where('teacher_id', $teacher->id)
@@ -88,50 +108,135 @@ class StudentBookingController extends Controller
                 ];
             });
 
+        // Special handling: Always add today with at least one slot to ensure it's never disabled
+        $today = Carbon::now()->startOfDay();
+        $todayName = strtolower($today->format('l'));
+        $todayAvailability = $teacher->availability->where('day_of_week', $todayName)->where('is_available', true)->first();
+        
+        if ($todayAvailability) {
+            $now = Carbon::now();
+            $todayDateString = $today->format('Y-m-d');
+            $slotStartTime = $todayAvailability->start_time;
+            $slotEndTime = $todayAvailability->end_time;
+            
+            // Check if the slot is completely in the past
+            $slotDateTime = Carbon::createFromFormat('Y-m-d H:i:s', $todayDateString . ' ' . $slotStartTime);
+            $slotEndDateTime = Carbon::createFromFormat('Y-m-d H:i:s', $todayDateString . ' ' . $slotEndTime);
+            
+            // If the slot end time is in the future, add it (we allow partial slots)
+            if ($slotEndDateTime->gt($now)) {
+                Log::debug("Explicitly adding TODAY slot for {$todayDateString}");
+                
+                // Adjust start time if it's in the past
+                if ($slotDateTime->lt($now)) {
+                    // Round to the next 15 minutes
+                    $minutes = ceil($now->minute / 15) * 15;
+                    $adjustedStartTime = $now->copy()->setTime($now->hour, $minutes, 0)->format('H:i:s');
+                    $slotStartTime = $adjustedStartTime;
+                }
+                
+                $availability[] = [
+                    'date' => $todayDateString,
+                    'day' => $today->format('l'),
+                    'start_time' => $slotStartTime,
+                    'end_time' => $slotEndTime,
+                    'formatted_start' => Carbon::createFromFormat('H:i:s', $slotStartTime)->format('g:i A'),
+                    'formatted_end' => Carbon::createFromFormat('H:i:s', $slotEndTime)->format('g:i A'),
+                ];
+            }
+        }
+        
+        // Special handling: Add upcoming Saturdays explicitly
+        $saturdayAvailability = $teacher->availability->where('day_of_week', 'saturday')->where('is_available', true)->first();
+        if ($saturdayAvailability) {
+            // Find the next 4 Saturdays and add them manually
+            $nextSaturday = Carbon::now()->startOfDay();
+            while ($nextSaturday->dayOfWeek != 6) { // 6 is Saturday in Carbon
+                $nextSaturday->addDay();
+            }
+            
+            // Add Saturday slots for the next 4 weeks
+            for ($i = 0; $i < 4; $i++) {
+                $slotDate = $nextSaturday->copy()->addDays($i * 7)->format('Y-m-d');
+                Log::debug("Explicitly adding Saturday slot for {$slotDate}");
+                
+                $availability[] = [
+                    'date' => $slotDate,
+                    'day' => 'Saturday',
+                    'start_time' => $saturdayAvailability->start_time,
+                    'end_time' => $saturdayAvailability->end_time,
+                    'formatted_start' => Carbon::createFromFormat('H:i:s', $saturdayAvailability->start_time)->format('g:i A'),
+                    'formatted_end' => Carbon::createFromFormat('H:i:s', $saturdayAvailability->end_time)->format('g:i A'),
+                ];
+            }
+        }
+        
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             $dayName = strtolower($date->format('l'));
-            $dayOfWeek = $dayMapping[$dayName] ?? null;
-
-            if ($dayOfWeek !== null) {
-                $teacherSlots = $teacher->availability->where('day_of_week', $dayName)->where('is_available', true);
+            
+            // Skip Saturdays as we've added them manually above
+            if ($dayName == 'saturday') continue;
+            
+            // Process all other days
+            $teacherSlots = $teacher->availability->where('day_of_week', $dayName)->where('is_available', true);
+            
+            // Debug log to check availability
+            Log::debug("Checking availability for {$dayName} - Found {$teacherSlots->count()} slots");
+            
+            foreach ($teacherSlots as $slot) {
+                $slotDate = $date->format('Y-m-d');
+                $slotStartTime = $slot->start_time;
+                $slotEndTime = $slot->end_time;
                 
-                foreach ($teacherSlots as $slot) {
-                    $slotDate = $date->format('Y-m-d');
-                    $slotStartTime = $slot->start_time;
-                    $slotEndTime = $slot->end_time;
-                    
-                    // Check if this slot conflicts with any existing booking
-                    $isBooked = $existingBookings->contains(function ($booking) use ($slotDate, $slotStartTime, $slotEndTime) {
-                        if ($booking['date'] !== $slotDate) {
-                            return false;
-                        }
-                        
-                        // Check for time overlap
-                        $bookingStart = Carbon::createFromFormat('H:i:s', $booking['start_time']);
-                        $bookingEnd = Carbon::createFromFormat('H:i:s', $booking['end_time']);
-                        $slotStart = Carbon::createFromFormat('H:i:s', $slotStartTime);
-                        $slotEnd = Carbon::createFromFormat('H:i:s', $slotEndTime);
-                        
-                        // Check if there's any overlap between the booking and the slot
-                        return ($bookingStart < $slotEnd && $bookingEnd > $slotStart);
-                    });
-                    
-                    // Only add the slot if it's not already booked
-                    if (!$isBooked) {
-                        $availability[] = [
-                            'date' => $slotDate,
-                            'day' => $date->format('l'),
-                            'start_time' => $slotStartTime,
-                            'end_time' => $slotEndTime,
-                            'formatted_start' => Carbon::createFromFormat('H:i:s', $slotStartTime)->format('g:i A'),
-                            'formatted_end' => Carbon::createFromFormat('H:i:s', $slotEndTime)->format('g:i A'),
-                        ];
+                // Check if this slot conflicts with any existing booking
+                $isBooked = $existingBookings->contains(function ($booking) use ($slotDate, $slotStartTime, $slotEndTime) {
+                    if ($booking['date'] !== $slotDate) {
+                        return false;
                     }
+                    
+                    // Check for time overlap
+                    $bookingStart = Carbon::createFromFormat('H:i:s', $booking['start_time']);
+                    $bookingEnd = Carbon::createFromFormat('H:i:s', $booking['end_time']);
+                    $slotStart = Carbon::createFromFormat('H:i:s', $slotStartTime);
+                    $slotEnd = Carbon::createFromFormat('H:i:s', $slotEndTime);
+                    
+                    // Check if there's any overlap between the booking and the slot
+                    return ($bookingStart < $slotEnd && $bookingEnd > $slotStart);
+                });
+                
+                // Check if the slot is in the past (for today's date)
+                $isInPast = false;
+                if ($date->isToday()) {
+                    $now = Carbon::now();
+                    $slotDateTime = Carbon::createFromFormat('Y-m-d H:i:s', $slotDate . ' ' . $slotStartTime);
+                    $isInPast = $now->gt($slotDateTime);
+                }
+                
+                // Debug info for Saturday slots
+                if ($dayName == 'saturday') {
+                    Log::debug("Saturday slot check - Date: $slotDate, Time: $slotStartTime-$slotEndTime, IsBooked: " . ($isBooked ? 'Yes' : 'No') . ", IsInPast: " . ($isInPast ? 'Yes' : 'No'));
+                }
+                
+                // Only add the slot if it's not already booked and not in the past
+                if (!$isBooked && !$isInPast) {
+                    $availability[] = [
+                        'date' => $slotDate,
+                        'day' => $date->format('l'),
+                        'start_time' => $slotStartTime,
+                        'end_time' => $slotEndTime,
+                        'formatted_start' => Carbon::createFromFormat('H:i:s', $slotStartTime)->format('g:i A'),
+                        'formatted_end' => Carbon::createFromFormat('H:i:s', $slotEndTime)->format('g:i A'),
+                    ];
                 }
             }
         }
-
-        return collect($availability)->groupBy('date');
+        
+        // Log the final processed availability that will be displayed in the calendar
+        $groupedAvailability = collect($availability)->groupBy('date');
+        Log::debug('Final processed availability: ' . json_encode($groupedAvailability->all()));
+        
+        return $groupedAvailability;
+        
     }
 
     /**
@@ -170,7 +275,7 @@ class StudentBookingController extends Controller
 
         $teacher = $student->studentProfile->teacher;
         $duration = $request->duration;
-        $sessionDetails = self::SESSION_PRICES[$duration];
+        $sessionDetails = $this->getSessionPricing($student, $teacher, $duration);
         
         // Calculate scheduled time
         $scheduledAt = Carbon::createFromFormat('Y-m-d H:i', $request->selected_date . ' ' . $request->selected_time);
@@ -307,14 +412,15 @@ class StudentBookingController extends Controller
     public function showPayment(Request $request)
     {
         $student = auth()->user();
-        $student = User::with(['studentProfile.teacher'])->find($student->id);
+        $student = User::with(['studentProfile.teacher.teacherProfile'])->find($student->id);
 
         if (!$student->studentProfile || !$student->studentProfile->teacher_id) {
             return redirect()->route('student.teachers')->with('error', 'No assigned teacher found.');
         }
 
         $duration = $request->query('duration', 60);
-        $sessionDetails = self::SESSION_PRICES[$duration];
+        $teacher = $student->studentProfile->teacher;
+        $sessionDetails = $this->getSessionPricing($student, $teacher, $duration);
         $price = $sessionDetails['price'] / 100; // Convert to pounds
 
         return view('student.booking.payment', [
@@ -343,10 +449,10 @@ class StudentBookingController extends Controller
         ]);
 
         $student = auth()->user();
-        $student = User::with(['studentProfile.teacher'])->find($student->id);
+        $student = User::with(['studentProfile.teacher.teacherProfile'])->find($student->id);
         $teacher = $student->studentProfile->teacher;
         $duration = $request->duration;
-        $sessionDetails = self::SESSION_PRICES[$duration];
+        $sessionDetails = $this->getSessionPricing($student, $teacher, $duration);
 
         try {
             Stripe::setApiKey(config('services.stripe.secret'));
@@ -412,11 +518,43 @@ class StudentBookingController extends Controller
     }
 
     /**
+     * Check if the student has reached the premium pricing threshold (10+ sessions) with a high-level teacher
+     */
+    private function shouldUsePremiumPricing($student, $teacher)
+    {
+        // Only apply premium pricing for high-level teachers
+        if (!$teacher->teacherProfile || !$teacher->teacherProfile->high_level_teacher) {
+            return false;
+        }
+        
+        // Count completed sessions with this specific high-level teacher
+        $sessionsCount = ChessSession::where('student_id', $student->id)
+            ->where('teacher_id', $teacher->id)
+            ->whereIn('status', ['completed', 'booked'])
+            ->count();
+        
+        // If 10 or more sessions, use premium pricing
+        return $sessionsCount >= 10;
+    }
+    
+    /**
+     * Get the appropriate pricing based on teacher level and session count
+     */
+    private function getSessionPricing($student, $teacher, $duration)
+    {
+        if ($this->shouldUsePremiumPricing($student, $teacher)) {
+            return self::HIGH_LEVEL_PRICES[$duration];
+        }
+        
+        return self::SESSION_PRICES[$duration];
+    }
+    
+    /**
      * Create a chess session
      */
     private function createChessSession($payment, $student, $teacher, $duration, $sessionType, $scheduledAt, $suggestedAvailability = null)
     {
-        $sessionDetails = self::SESSION_PRICES[$duration];
+        $sessionDetails = $this->getSessionPricing($student, $teacher, $duration);
 
         $session = ChessSession::create([
             'payment_id' => $payment->id,

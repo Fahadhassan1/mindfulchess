@@ -42,13 +42,30 @@
                         <!-- Session Configuration -->
                         <div class="mb-6">
                             <h3 class="text-lg font-semibold mb-4">Session Details</h3>
+                            
+                            @if($usesPremiumPricing)
+                            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-yellow-700">
+                                            <span class="font-medium">Premium Rate Applied:</span> You have completed 10+ sessions with this high-level coach, and premium pricing is now in effect. If you prefer to switch to another coach with standard rates, please contact admin.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Duration</label>
                                     <select name="duration" id="duration" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <option value="30">30 minutes - £25.00</option>
-                                        <option value="45">45 minutes - £35.00</option>
-                                        <option value="60" selected>60 minutes - £45.00</option>
+                                        <option value="30">30 minutes - £{{ number_format($sessionPrices['30']['price'], 2) }}</option>
+                                        <option value="45">45 minutes - £{{ number_format($sessionPrices['45']['price'], 2) }}</option>
+                                        <option value="60" selected>60 minutes - £{{ number_format($sessionPrices['60']['price'], 2) }}</option>
                                     </select>
                                 </div>
                                 <div>
@@ -85,18 +102,20 @@
                                             <div class="font-medium p-2 text-gray-500">Sat</div>
                                             
                                             @php
-                                                $startOfMonth = \Carbon\Carbon::now()->startOfMonth();
-                                                $endOfMonth = \Carbon\Carbon::now()->addDays(30);
-                                                $currentDate = $startOfMonth->copy();
+                                                $today = \Carbon\Carbon::now();
+                                                $endDate = $today->copy()->addDays(30);
                                                 
-                                                // Add empty cells for days before the start of the month
-                                                $startDayOfWeek = $startOfMonth->dayOfWeek;
-                                                for ($i = 0; $i < $startDayOfWeek; $i++) {
+                                                // Start from today and show next 30 days
+                                                $currentDate = $today->copy();
+                                                
+                                                // Add empty cells to align the first date with correct day of week
+                                                $firstDayOfWeek = $currentDate->dayOfWeek; // 0=Sunday, 1=Monday, etc.
+                                                for ($i = 0; $i < $firstDayOfWeek; $i++) {
                                                     echo '<div class="p-2"></div>';
                                                 }
                                             @endphp
                                             
-                                            @for($date = \Carbon\Carbon::now(); $date->lte($endOfMonth); $date->addDay())
+                                            @for($date = \Carbon\Carbon::now(); $date->lte($endDate); $date->addDay())
                                                 @php
                                                     $dateString = $date->format('Y-m-d');
                                                     $hasAvailability = $availability->has($dateString);
@@ -110,7 +129,7 @@
                                                     </button>
                                                 </div>
                                                 
-                                                @if($date->dayOfWeek === 6) <!-- Saturday, end of week -->
+                                                @if($date->dayOfWeek === 6 && !$date->eq($endDate)) <!-- Saturday, end of week, but not the last date -->
                                                     </div><div class="grid grid-cols-7 gap-1 text-center text-sm">
                                                 @endif
                                             @endfor
@@ -202,11 +221,7 @@
             let selectedTime = null;
 
             // Session pricing
-            const sessionPrices = {
-                '30': { price: 25.00, name: '30 minutes' },
-                '45': { price: 35.00, name: '45 minutes' },
-                '60': { price: 45.00, name: '60 minutes' }
-            };
+            const sessionPrices = @json($sessionPrices);
 
             // Date selection
             document.querySelectorAll('.date-btn').forEach(btn => {
@@ -239,12 +254,16 @@
                 }
 
                 const slotsHtml = slots.map(slot => {
+                    // Calculate the day of week from the date string to ensure accuracy
+                    const slotDate = new Date(slot.date + 'T00:00:00');
+                    const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][slotDate.getDay()];
+                    
                     return `
                         <button type="button" 
                                 class="time-slot-btn w-full p-3 text-left border border-gray-300 rounded hover:bg-blue-50 hover:border-blue-300 transition duration-200"
                                 data-time="${slot.start_time.substring(0, 5)}">
                             <div class="font-medium">${slot.formatted_start} - ${slot.formatted_end}</div>
-                            <div class="text-sm text-gray-500">${slot.day}</div>
+                            <div class="text-sm text-gray-500">${dayOfWeek}</div>
                         </button>
                     `;
                 }).join('');

@@ -67,7 +67,6 @@ class AdditionalSessionBooked extends Notification implements ShouldQueue
             ->line('- Teacher: ' . $this->teacher->name)
             ->line('')
             ->line('**Payment Details:**')
-            ->line('- Payment ID: ' . $this->payment->payment_id)
             ->line('- Amount: £' . number_format($this->payment->amount, 2))
             ->line('- Date: ' . $this->payment->paid_at->format('d M Y, H:i'));
         

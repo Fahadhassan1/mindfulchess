@@ -50,23 +50,7 @@
                                                 </div>
                                                 @endif
                                                 
-                                                @if($teacher->teacherProfile->experience_years)
-                                                <div>
-                                                    <p class="text-gray-500 text-sm">Years of Experience</p>
-                                                    <p class="font-medium">{{ $teacher->teacherProfile->experience_years }}</p>
-                                                </div>
-                                                @endif
-                                                
-                                                @if($teacher->teacherProfile->specialties)
-                                                <div>
-                                                    <p class="text-gray-500 text-sm">Specialties</p>
-                                                    <div class="flex flex-wrap gap-1 mt-1">
-                                                        @foreach($teacher->teacherProfile->specialties as $specialty)
-                                                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ $specialty }}</span>
-                                                        @endforeach
-                                                    </div>
-                                                </div>
-                                                @endif
+                                                <!-- Experience Years and Specialties sections have been removed -->
                                             </div>
                                             
                                             @if($teacher->teacherProfile->bio)

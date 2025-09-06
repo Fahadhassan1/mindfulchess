@@ -35,8 +35,7 @@
                                     <p class="text-sm font-semibold mt-2">Teaching Type:</p>
                                     <p>{{ $teacher->teacherProfile && $teacher->teacherProfile->teaching_type ? ucfirst($teacher->teacherProfile->teaching_type) : 'Not specified' }}</p>
                                     
-                                    <p class="text-sm font-semibold mt-2">Experience:</p>
-                                    <p>{{ $teacher->teacherProfile && $teacher->teacherProfile->experience_years ? $teacher->teacherProfile->experience_years . ' years' : 'Not specified' }}</p>
+                                    <!-- Experience field has been removed -->
                                     
                                     <p class="text-sm font-semibold mt-2">Stripe Account:</p>
                                     <p class="text-xs break-all">{{ $teacher->teacherProfile->stripe_account_id ?? 'Not connected' }}</p>
@@ -89,22 +88,7 @@
                                     </div>
                                 </div>
                                 
-                                <div class="mb-6">
-                                    <h4 class="text-lg font-semibold mb-2">Specialties</h4>
-                                    <div class="bg-gray-50 p-4 rounded">
-                                        @if($teacher->teacherProfile && is_array($teacher->teacherProfile->specialties) && count($teacher->teacherProfile->specialties) > 0)
-                                            <div class="flex flex-wrap gap-2">
-                                                @foreach($teacher->teacherProfile->specialties as $specialty)
-                                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                                        {{ $specialty }}
-                                                    </span>
-                                                @endforeach
-                                            </div>
-                                        @else
-                                            No specialties listed.
-                                        @endif
-                                    </div>
-                                </div>
+                                <!-- Specialties section has been removed -->
                                 
                                 <!-- Teacher Availability -->
                                 <div class="mb-6">

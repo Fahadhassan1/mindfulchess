@@ -1,7 +1,9 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <h2 class="font-semibold text-xl te                                    @error('other_field')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderrorgray-800 leading-tight">
                 {{ __('Edit Teacher Profile') }}
             </h2>
             <div>
@@ -71,23 +73,7 @@
                                     @enderror
                                 </div>
 
-                                <!-- Experience Years -->
-                                <div class="mb-6">
-                                    <label class="block text-gray-700 text-sm font-bold mb-2" for="experience_years">
-                                        Years of Experience
-                                    </label>
-                                    <input 
-                                        type="number" 
-                                        name="experience_years" 
-                                        id="experience_years" 
-                                        value="{{ old('experience_years', $profile->experience_years ?? '') }}" 
-                                        min="0"
-                                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                    >
-                                    @error('experience_years')
-                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
+                                <!-- Experience Years field has been removed -->
                             </div>
 
                             <div>
@@ -108,21 +94,8 @@
                                     @enderror
                                 </div>
 
-                                <!-- Specialties -->
-                                <div class="mb-6">
-                                    <label class="block text-gray-700 text-sm font-bold mb-2" for="specialties">
-                                        Specialties (comma separated)
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        name="specialties" 
-                                        id="specialties" 
-                                        value="{{ old('specialties', $profile->specialties ? implode(', ', $profile->specialties) : '') }}" 
-                                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                        placeholder="e.g. Opening strategies, Endgame tactics, Beginner coaching"
-                                    >
-                                    <p class="text-gray-500 text-xs mt-1">Enter specialties separated by commas</p>
-                                    @error('specialties')
+                                <!-- Specialties field has been removed -->
+                                    @error('other_field')
                                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
@@ -160,6 +133,27 @@
                                     </div>
                                     <p class="text-gray-500 text-xs mt-1">When deactivated, the teacher will not receive notifications</p>
                                     @error('is_active')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                
+                                <!-- High Level Teacher Status -->
+                                <div class="mb-6">
+                                    <div class="flex items-center">
+                                        <input 
+                                            type="checkbox" 
+                                            name="high_level_teacher" 
+                                            id="high_level_teacher" 
+                                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                            {{ old('high_level_teacher', $profile->high_level_teacher ?? false) ? 'checked' : '' }}
+                                            value="1"
+                                        >
+                                        <label class="ml-2 text-gray-700 text-sm font-bold" for="high_level_teacher">
+                                            High Level Teacher
+                                        </label>
+                                    </div>
+                                    <p class="text-gray-500 text-xs mt-1">Mark this teacher as a high level teacher</p>
+                                    @error('high_level_teacher')
                                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>

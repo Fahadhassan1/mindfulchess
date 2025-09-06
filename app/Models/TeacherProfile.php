@@ -20,9 +20,8 @@ class TeacherProfile extends Model
         'stripe_account_id',
         'bio',
         'profile_image',
-        'experience_years',
-        'specialties',
         'is_active',
+        'high_level_teacher',
     ];
 
     /**
@@ -31,8 +30,8 @@ class TeacherProfile extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'specialties' => 'array',
         'is_active' => 'boolean',
+        'high_level_teacher' => 'boolean',
     ];
 
     /**

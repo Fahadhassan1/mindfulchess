@@ -97,10 +97,9 @@ class TeacherController extends Controller
             'teaching_type' => 'nullable|in:adult,kids',
             'stripe_account_id' => 'nullable|string|max:255',
             'bio' => 'nullable|string',
-            'experience_years' => 'nullable|integer|min:0',
-            'specialties' => 'nullable',
             'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_active' => 'nullable|boolean',
+            'high_level_teacher' => 'nullable|boolean',
         ]);
 
         // Handle file upload for profile image
@@ -115,27 +114,18 @@ class TeacherController extends Controller
             $request->file('profile_image')->storeAs('public/profile_images', $imageName);
         }
 
-        // Process specialties (converting from comma-separated string to array)
-        $specialties = null;
-        if ($request->has('specialties') && !empty($request->specialties)) {
-            $specialties = array_map('trim', explode(',', $request->specialties));
-        }
-
         // Update or create teacher profile
         $profileData = $request->only([
             'teaching_type',
             'stripe_account_id',
             'bio',
-            'experience_years',
         ]);
         
         // Handle is_active checkbox
         $profileData['is_active'] = $request->has('is_active');
         
-        // Add specialties to profile data
-        if ($specialties !== null) {
-            $profileData['specialties'] = $specialties;
-        }
+        // Handle high_level_teacher checkbox
+        $profileData['high_level_teacher'] = $request->has('high_level_teacher');
 
         if (isset($imageName)) {
             $profileData['profile_image'] = $imageName;
@@ -249,7 +239,7 @@ class TeacherController extends Controller
             'Expires' => '0'
         ];
         
-        $columns = ['Name', 'Email', 'Teaching Type', 'Experience (Years)', 'Status'];
+        $columns = ['Name', 'Email', 'Teaching Type', 'Status'];
         
         $callback = function() use ($teachers, $columns) {
             $file = fopen('php://output', 'w');
@@ -260,7 +250,6 @@ class TeacherController extends Controller
                     $teacher->name,
                     $teacher->email,
                     $teacher->teacherProfile->teaching_type ?? 'Not specified',
-                    $teacher->teacherProfile->experience_years ?? 'Not specified',
                     (!$teacher->teacherProfile ? 'No Profile' : ($teacher->teacherProfile->is_active ? 'Active' : 'Inactive'))
                 ];
                 
@@ -309,6 +298,30 @@ class TeacherController extends Controller
             // Calculate recurring student percentage
             $recurringPercentage = $totalStudentCount > 0 
                 ? round(($recurringStudentCount / $totalStudentCount) * 100, 2) 
+                : 0;
+                
+            // Calculate session milestone percentages
+            $studentsWithTenPlusSessions = 0;
+            $studentsWithTwentyPlusSessions = 0;
+            $studentsWithFiftyPlusSessions = 0;
+            
+            foreach ($studentSessions as $sessions) {
+                $sessionCount = $sessions->count();
+                if ($sessionCount >= 10) $studentsWithTenPlusSessions++;
+                if ($sessionCount >= 20) $studentsWithTwentyPlusSessions++;
+                if ($sessionCount >= 50) $studentsWithFiftyPlusSessions++;
+            }
+            
+            $tenPlusSessionsPercentage = $totalStudentCount > 0 
+                ? round(($studentsWithTenPlusSessions / $totalStudentCount) * 100, 1) 
+                : 0;
+                
+            $twentyPlusSessionsPercentage = $totalStudentCount > 0 
+                ? round(($studentsWithTwentyPlusSessions / $totalStudentCount) * 100, 1) 
+                : 0;
+                
+            $fiftyPlusSessionsPercentage = $totalStudentCount > 0 
+                ? round(($studentsWithFiftyPlusSessions / $totalStudentCount) * 100, 1) 
                 : 0;
                 
             // Get top 5 students by session count
@@ -360,6 +373,12 @@ class TeacherController extends Controller
                 'total_students' => $totalStudentCount,
                 'recurring_students' => $recurringStudentCount,
                 'recurring_percentage' => $recurringPercentage,
+                'ten_plus_sessions' => $studentsWithTenPlusSessions,
+                'ten_plus_percentage' => $tenPlusSessionsPercentage,
+                'twenty_plus_sessions' => $studentsWithTwentyPlusSessions,
+                'twenty_plus_percentage' => $twentyPlusSessionsPercentage,
+                'fifty_plus_sessions' => $studentsWithFiftyPlusSessions,
+                'fifty_plus_percentage' => $fiftyPlusSessionsPercentage,
                 'top_students' => $topStudents,
                 'monthly_sessions' => $monthlySessions
             ];
@@ -402,6 +421,30 @@ class TeacherController extends Controller
         // Calculate recurring student percentage
         $recurringPercentage = $totalStudentCount > 0 
             ? round(($recurringStudentCount / $totalStudentCount) * 100, 2) 
+            : 0;
+        
+        // Calculate session milestone percentages
+        $studentsWithTenPlusSessions = 0;
+        $studentsWithTwentyPlusSessions = 0;
+        $studentsWithFiftyPlusSessions = 0;
+        
+        foreach ($studentSessions as $sessions) {
+            $sessionCount = $sessions->count();
+            if ($sessionCount >= 10) $studentsWithTenPlusSessions++;
+            if ($sessionCount >= 20) $studentsWithTwentyPlusSessions++;
+            if ($sessionCount >= 50) $studentsWithFiftyPlusSessions++;
+        }
+        
+        $tenPlusSessionsPercentage = $totalStudentCount > 0 
+            ? round(($studentsWithTenPlusSessions / $totalStudentCount) * 100, 1) 
+            : 0;
+            
+        $twentyPlusSessionsPercentage = $totalStudentCount > 0 
+            ? round(($studentsWithTwentyPlusSessions / $totalStudentCount) * 100, 1) 
+            : 0;
+            
+        $fiftyPlusSessionsPercentage = $totalStudentCount > 0 
+            ? round(($studentsWithFiftyPlusSessions / $totalStudentCount) * 100, 1) 
             : 0;
             
         // Get detailed information about each student
@@ -456,7 +499,13 @@ class TeacherController extends Controller
             'studentDetails' => $studentDetails,
             'monthlySessions' => $monthlySessions,
             'monthlyLabels' => json_encode($monthlyLabels),
-            'monthlyData' => json_encode($monthlyData)
+            'monthlyData' => json_encode($monthlyData),
+            'tenPlusSessionsPercentage' => $tenPlusSessionsPercentage,
+            'twentyPlusSessionsPercentage' => $twentyPlusSessionsPercentage,
+            'fiftyPlusSessionsPercentage' => $fiftyPlusSessionsPercentage,
+            'studentsWithTenPlusSessions' => $studentsWithTenPlusSessions,
+            'studentsWithTwentyPlusSessions' => $studentsWithTwentyPlusSessions,
+            'studentsWithFiftyPlusSessions' => $studentsWithFiftyPlusSessions
         ]);
     }
 }
