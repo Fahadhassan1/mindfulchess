@@ -87,8 +87,24 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              
+                                        <button type="button" class="view-details text-indigo-600 hover:text-indigo-900"
+                                            data-student-id="{{ $student->id }}"
+                                            data-student-name="{{ $student->name }}"
+                                            data-student-email="{{ $student->email }}"
+                                            data-student-age="{{ $student->studentProfile->age ?? 'Not specified' }}"
+                                            data-student-level="{{ $student->studentProfile->level ?? 'Not specified' }}"
+                                            data-student-school="{{ $student->studentProfile->school ?? 'Not specified' }}"
+                                            data-student-parent-name="{{ $student->studentProfile->parent_name ?? 'Not specified' }}"
+                                            data-student-parent-email="{{ $student->studentProfile->parent_email ?? 'Not specified' }}"
+                                            data-student-parent-phone="{{ $student->studentProfile->parent_phone ?? 'Not specified' }}"
+                                            data-student-goals="{{ $student->studentProfile->learning_goals ?? 'Not specified' }}">
+                                            Details
                                         </button>
+                                        
+                                        <a href="{{ route('messages.conversation', $student) }}" class="text-blue-600 hover:text-blue-900 ml-3">
+                                            Message
+                                        </a>
+                                        
                                         @if(isset($studentStats[$student->id]) && $studentStats[$student->id]['session_count'] > 0)
                                             <a href="{{ route('teacher.sessions') }}?student_id={{ $student->id }}" class="text-green-600 hover:text-green-900 ml-3">
                                                 Sessions
@@ -162,7 +178,10 @@
                     <button id="closeModal" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md flex-grow shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300">
                         Close
                     </button>
-                    <a id="viewSessionsBtn" href="#" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md flex-grow shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <a id="messageStudentBtn" href="#" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md flex-grow shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        Message
+                    </a>
+                    <a id="viewSessionsBtn" href="#" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md flex-grow shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300">
                         View Sessions
                     </a>
                 </div>
@@ -176,6 +195,7 @@
             const viewButtons = document.querySelectorAll('.view-details');
             const closeButton = document.getElementById('closeModal');
             const viewSessionsBtn = document.getElementById('viewSessionsBtn');
+            const messageStudentBtn = document.getElementById('messageStudentBtn');
             const studentStats = @json($studentStats);
             
             // Open modal with student details
@@ -196,6 +216,9 @@
                     // Add session statistics
                     const sessionCount = studentStats[studentId] ? studentStats[studentId].session_count : 0;
                     document.getElementById('modal-session-count').textContent = sessionCount;
+                    
+                    // Set message button link
+                    messageStudentBtn.href = "{{ route('messages.conversation', ':studentId') }}".replace(':studentId', studentId);
                     
                     if (sessionCount > 0) {
                         const isRecurring = studentStats[studentId].is_recurring;

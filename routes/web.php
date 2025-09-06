@@ -98,6 +98,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Transfer management routes
     Route::get('/transfers', [App\Http\Controllers\Admin\TransferController::class, 'index'])->name('transfers.index');
     Route::get('/transfers/export', [App\Http\Controllers\Admin\TransferController::class, 'export'])->name('transfers.export');
+    
+    // Message moderation routes
+    Route::get('/messages', [App\Http\Controllers\Admin\MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/export', [App\Http\Controllers\Admin\MessageController::class, 'export'])->name('messages.export');
+    Route::get('/messages/{message}', [App\Http\Controllers\Admin\MessageController::class, 'show'])->name('messages.show');
+    Route::post('/messages/{message}/moderate', [App\Http\Controllers\Admin\MessageController::class, 'moderate'])->name('messages.moderate');
+    Route::post('/messages/bulk-moderate', [App\Http\Controllers\Admin\MessageController::class, 'bulkModerate'])->name('messages.bulk-moderate');
+    Route::get('/messages/conversation/{user1}/{user2}', [App\Http\Controllers\Admin\MessageController::class, 'conversation'])->name('messages.conversation');
     Route::get('/transfers/{transfer}', [App\Http\Controllers\Admin\TransferController::class, 'show'])->name('transfers.show');
     Route::get('/transfers/{transfer}/invoice', [App\Http\Controllers\Admin\TransferController::class, 'showInvoice'])->name('transfers.invoice');
     Route::post('/transfers/process-pending', [App\Http\Controllers\Admin\TransferController::class, 'processPending'])->name('transfers.process-pending');
@@ -167,6 +175,13 @@ Route::middleware(['auth', 'role:student|teacher|admin'])->prefix('student')->na
 // Sessions routes for all authenticated users
 Route::middleware('auth')->group(function () {
     Route::get('/sessions', [App\Http\Controllers\SessionController::class, 'index'])->name('sessions.manage');
+    
+    // Messaging routes
+    Route::get('/messages', [App\Http\Controllers\MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/conversation/{user}', [App\Http\Controllers\MessageController::class, 'conversation'])->name('messages.conversation');
+    Route::post('/messages', [App\Http\Controllers\MessageController::class, 'store'])->name('messages.store');
+    Route::get('/messages/contacts', [App\Http\Controllers\MessageController::class, 'contacts'])->name('messages.contacts');
+    Route::get('/messages/unread-count', [App\Http\Controllers\MessageController::class, 'unreadCount'])->name('messages.unread-count');
     
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -11,7 +11,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register the ContentFilterService as a singleton
+        $this->app->singleton(\App\Services\ContentFilterService::class, function ($app) {
+            return new \App\Services\ContentFilterService();
+        });
     }
 
     /**

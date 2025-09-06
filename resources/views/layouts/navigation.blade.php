@@ -38,6 +38,9 @@
                     <x-nav-link :href="route('admin.coupons.index')" :active="request()->routeIs('admin.coupons.*')">
                         {{ __('Coupons') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('admin.messages.index')" :active="request()->routeIs('admin.messages.*')">
+                        {{ __('Messages') }}
+                    </x-nav-link>
                     @endrole
 
                     @role('teacher')
@@ -59,6 +62,9 @@
                     <x-nav-link :href="route('teacher.availability')" :active="request()->routeIs('teacher.availability')">
                         {{ __('My Availability') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('messages.index')" :active="request()->routeIs('messages.*')">
+                        {{ __('Messages') }}
+                    </x-nav-link>
                     @endrole
 
                     @role('student')
@@ -76,6 +82,9 @@
                     </x-nav-link>
                     <x-nav-link :href="route('student.profile')" :active="request()->routeIs('student.profile')">
                         {{ __('My Profile') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('messages.index')" :active="request()->routeIs('messages.*')">
+                        {{ __('Messages') }}
                     </x-nav-link>
                     @endrole
                     @endif

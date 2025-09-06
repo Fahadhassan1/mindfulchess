@@ -83,4 +83,29 @@ class User extends Authenticatable
     {
         return $this->hasMany(TeacherAvailability::class);
     }
+
+    /**
+     * Get messages sent by this user.
+     */
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    /**
+     * Get messages received by this user.
+     */
+    public function receivedMessages()
+    {
+        return $this->hasMany(Message::class, 'recipient_id');
+    }
+
+    /**
+     * Get all messages for this user (sent and received).
+     */
+    public function messages()
+    {
+        return Message::where('sender_id', $this->id)
+                     ->orWhere('recipient_id', $this->id);
+    }
 }
