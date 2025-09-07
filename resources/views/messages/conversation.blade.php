@@ -37,7 +37,7 @@
                                     <div class="max-w-xs lg:max-w-md">
                                         <div class="flex items-end space-x-2 {{ $message->sender_id == auth()->id() ? 'flex-row-reverse space-x-reverse' : '' }}">
                                             <div class="flex-shrink-0">
-                                                <div class="h-8 w-8 rounded-full {{ $message->sender_id == auth()->id() ? 'bg-indigo-500' : 'bg-gray-300' }} flex items-center justify-center">
+                                                <div class="h-8 w-8 rounded-full {{ $message->sender_id == auth()->id() ? 'bg-indigo-600' : 'bg-gray-300' }} flex items-center justify-center">
                                                     <span class="text-xs font-medium {{ $message->sender_id == auth()->id() ? 'text-white' : 'text-gray-700' }}">
                                                         {{ strtoupper(substr($message->sender->name, 0, 1)) }}
                                                     </span>
@@ -45,7 +45,7 @@
                                             </div>
                                             
                                             <div class="flex flex-col">
-                                                <div class="px-4 py-2 rounded-lg {{ $message->sender_id == auth()->id() ? 'bg-indigo-500 text-white' : 'bg-white text-gray-900 border border-gray-200' }}">
+                                                <div class="px-4 py-2 rounded-lg {{ $message->sender_id == auth()->id() ? 'bg-indigo-600 text-white' : 'bg-white text-gray-900 border border-gray-200' }}">
                                                     @if($message->is_flagged && $message->sender_id == auth()->id())
                                                         <div class="text-xs {{ $message->sender_id == auth()->id() ? 'text-yellow-200' : 'text-orange-600' }} mb-1">
                                                             ⚠️ Message under review
@@ -210,14 +210,14 @@
                     <div class="max-w-xs lg:max-w-md">
                         <div class="flex items-end space-x-2 flex-row-reverse space-x-reverse">
                             <div class="flex-shrink-0">
-                                <div class="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center">
+                                <div class="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center">
                                     <span class="text-xs font-medium text-white">
                                         ${message.sender.name.charAt(0).toUpperCase()}
                                     </span>
                                 </div>
                             </div>
                             <div class="flex flex-col">
-                                <div class="px-4 py-2 rounded-lg bg-indigo-500 text-white">
+                                <div class="px-4 py-2 rounded-lg bg-indigo-600 text-white">
                                     ${isFlagged ? '<div class="text-xs text-yellow-200 mb-1">⚠️ Message under review</div>' : ''}
                                     <p class="text-sm whitespace-pre-wrap">${message.content}</p>
                                 </div>
