@@ -12,9 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('student_profiles', function (Blueprint $table) {
-            $table->string('payment_method_id')->nullable()->after('rate_rejected_teacher_id');
-            $table->string('customer_id')->nullable()->after('payment_method_id');
-            $table->timestamp('payment_method_updated_at')->nullable()->after('customer_id');
+            if (!Schema::hasColumn('student_profiles', 'payment_method_id')) {
+                $table->string('payment_method_id')->nullable()->after('rate_rejected_teacher_id');
+            }
+            if (!Schema::hasColumn('student_profiles', 'customer_id')) {
+                $table->string('customer_id')->nullable()->after('payment_method_id');
+            }
+            if (!Schema::hasColumn('student_profiles', 'payment_method_updated_at')) {
+                $table->timestamp('payment_method_updated_at')->nullable()->after('customer_id');
+            }
         });
     }
 
@@ -24,7 +30,18 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('student_profiles', function (Blueprint $table) {
-            $table->dropColumn(['payment_method_id', 'customer_id', 'payment_method_updated_at']);
+            $columnsToCheck = ['payment_method_id', 'customer_id', 'payment_method_updated_at'];
+            $columnsToRemove = [];
+            
+            foreach ($columnsToCheck as $column) {
+                if (Schema::hasColumn('student_profiles', $column)) {
+                    $columnsToRemove[] = $column;
+                }
+            }
+            
+            if (!empty($columnsToRemove)) {
+                $table->dropColumn($columnsToRemove);
+            }
         });
     }
 };
