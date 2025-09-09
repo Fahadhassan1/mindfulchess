@@ -555,6 +555,22 @@ class TeacherController extends Controller
                 'error' => $e->getMessage(),
                 'payment_method_id' => $student->studentProfile->payment_method_id
             ]);
+            
+            // Send payment failure notification to student
+            try {
+                $student->notify(new \App\Notifications\PaymentFailedNotification($session, $e->getMessage()));
+                Log::info('Payment failure notification sent to student', [
+                    'session_id' => $session->id,
+                    'student_id' => $student->id
+                ]);
+            } catch (\Exception $notificationError) {
+                Log::error('Failed to send payment failure notification', [
+                    'session_id' => $session->id,
+                    'student_id' => $student->id,
+                    'error' => $notificationError->getMessage()
+                ]);
+            }
+            
             throw new \Exception('Payment processing failed: ' . $e->getMessage());
         }
     }
@@ -643,7 +659,11 @@ class TeacherController extends Controller
 
         // Calculate payment breakdown
         $totalAmount = $session->payment->amount; // Keep in cents for Stripe
-        $paymentBreakdown = Transfer::calculateTeacherPayment($totalAmount / 100, $session->duration);
+        
+        // Check if this is a premium session (high-level teacher with student who has 10+ sessions)
+        $isPremiumSession = $this->isPremiumSession($session);
+        
+        $paymentBreakdown = Transfer::calculateTeacherPayment($totalAmount / 100, $session->duration, $isPremiumSession);
         $teacherAmountCents = round($paymentBreakdown['teacher_amount'] * 100); // Convert to cents
 
         // Set Stripe API key
@@ -949,5 +969,28 @@ class TeacherController extends Controller
         $transfer->load(['session.student', 'session.payment']);
         
         return view('teacher.invoice', compact('transfer'));
+    }
+
+    /**
+     * Check if a session qualifies for premium pricing
+     * (High-level teacher with student who has 10+ sessions with that teacher)
+     */
+    private function isPremiumSession(ChessSession $session)
+    {
+        $teacher = $session->teacher;
+        $student = $session->student;
+
+        // Must be a high-level teacher
+        if (!$teacher->teacherProfile || !$teacher->teacherProfile->high_level_teacher) {
+            return false;
+        }
+
+        // Check if student has 10+ sessions with this teacher
+        $sessionCount = ChessSession::where('student_id', $student->id)
+            ->where('teacher_id', $teacher->id)
+            ->whereIn('status', ['completed', 'booked'])
+            ->count();
+
+        return $sessionCount >= 10;
     }
 }

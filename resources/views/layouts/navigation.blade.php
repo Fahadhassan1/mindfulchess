@@ -71,6 +71,9 @@
                     <x-nav-link :href="route('student.payments')" :active="request()->routeIs('student.payments')">
                         {{ __('Payment History') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('student.payment-methods')" :active="request()->routeIs('student.payment-methods*')">
+                        {{ __('Payment Methods') }}
+                    </x-nav-link>
                     <x-nav-link :href="route('student.teachers')" :active="request()->routeIs('student.teachers')">
                         {{ __('My Teachers') }}
                     </x-nav-link>
@@ -195,6 +198,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('student.payments')" :active="request()->routeIs('student.payments')">
                 {{ __('Payment History') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('student.payment-methods')" :active="request()->routeIs('student.payment-methods*')">
+                {{ __('Payment Methods') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('student.teachers')" :active="request()->routeIs('student.teachers')">
                 {{ __('My Teachers') }}

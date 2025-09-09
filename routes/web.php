@@ -157,6 +157,8 @@ Route::middleware(['auth', 'role:student|teacher|admin'])->prefix('student')->na
     
     // Payment method management
     Route::get('/payment-methods', [App\Http\Controllers\StudentController::class, 'paymentMethods'])->name('payment-methods');
+    Route::get('/payment-methods/update', [App\Http\Controllers\StudentController::class, 'showUpdatePaymentMethod'])->name('payment-methods.update');
+    Route::post('/payment-methods/update', [App\Http\Controllers\StudentController::class, 'updatePaymentMethod'])->name('payment-methods.update.process');
     Route::post('/payment-methods/{payment}/set-default', [App\Http\Controllers\StudentController::class, 'setDefaultPaymentMethod'])->name('payment-methods.set-default');
     Route::get('/homework', [App\Http\Controllers\StudentController::class, 'homework'])->name('homework');
     Route::get('/homework/{homework}', [App\Http\Controllers\StudentController::class, 'showHomework'])->name('homework.show');

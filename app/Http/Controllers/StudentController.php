@@ -6,7 +6,9 @@ use App\Models\ChessSession;
 use App\Models\Payment;
 use App\Models\User;
 use App\Models\Homework;
+use App\Models\StudentProfile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class StudentController extends Controller
 {
@@ -184,15 +186,34 @@ class StudentController extends Controller
     public function paymentMethods()
     {
         $user = auth()->user();
+        $paymentMethod = null;
         
-        $paymentMethods = Payment::where('customer_email', $user->email)
-            ->where('status', 'succeeded')
-            ->whereNotNull('payment_method_id')
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->unique('payment_method_id'); // Remove duplicates based on payment method ID
-            
-        return view('student.payment-methods', compact('paymentMethods'));
+        // Get student profile with payment method ID
+        $studentProfile = StudentProfile::where('user_id', $user->id)->first();
+        
+        if ($studentProfile && $studentProfile->payment_method_id) {
+            try {
+                // Initialize Stripe
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+                
+                // Retrieve payment method from Stripe
+                $stripePaymentMethod = \Stripe\PaymentMethod::retrieve($studentProfile->payment_method_id);
+                
+                // Create a payment method object with card details
+                $paymentMethod = (object) [
+                    'id' => $stripePaymentMethod->id,
+                    'type' => $stripePaymentMethod->type,
+                    'card' => $stripePaymentMethod->card ?? null,
+                    'created_at' => $studentProfile->payment_method_updated_at ?? $studentProfile->updated_at,
+                    'is_default' => true, // Since it's the only one stored
+                ];
+            } catch (\Exception $e) {
+                // If payment method retrieval fails, log the error
+                Log::error('Failed to retrieve payment method from Stripe: ' . $e->getMessage());
+            }
+        }
+        
+        return view('student.payment-methods', compact('paymentMethod'));
     }
 
     /**
@@ -351,5 +372,105 @@ class StudentController extends Controller
         $originalName = basename($homework->attachment_path);
         
         return response()->download($filePath, $originalName);
+    }
+
+    /**
+     * Show the payment method update form
+     */
+    public function showUpdatePaymentMethod()
+    {
+        $student = auth()->user();
+        $studentProfile = $student->studentProfile;
+        
+        return view('student.update-payment-method', compact('student', 'studentProfile'));
+    }
+
+    /**
+     * Update the student's payment method
+     */
+    public function updatePaymentMethod(Request $request)
+    {
+        $request->validate([
+            'payment_method_id' => 'required|string',
+        ]);
+
+        $student = auth()->user();
+        
+        try {
+            // Set Stripe API key
+            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+            
+            // Get or create customer
+            $customer = $this->getOrCreateStripeCustomer($student);
+            
+            // Attach the new payment method to the customer
+            $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_method_id);
+            $paymentMethod->attach(['customer' => $customer->id]);
+            
+            // Update student profile with new payment method
+            $student->studentProfile()->updateOrCreate(
+                ['user_id' => $student->id],
+                [
+                    'customer_id' => $customer->id,
+                    'payment_method_id' => $request->payment_method_id,
+                    'payment_method_updated_at' => now(),
+                ]
+            );
+            
+            // Create payment record for tracking
+            Payment::create([
+                'payment_id' => 'pm_update_' . time(),
+                'customer_id' => $customer->id,
+                'customer_email' => $student->email,
+                'customer_name' => $student->name,
+                'amount' => 0, // No charge for updating payment method
+                'currency' => 'gbp',
+                'status' => 'succeeded',
+                'payment_method_type' => 'card',
+                'payment_method_id' => $request->payment_method_id,
+                'is_default' => true,
+                'stripe_data' => $paymentMethod->toArray(),
+                'paid_at' => now(),
+            ]);
+            
+            \Illuminate\Support\Facades\Log::info('Payment method updated successfully', [
+                'student_id' => $student->id,
+                'customer_id' => $customer->id,
+                'payment_method_id' => $request->payment_method_id
+            ]);
+            
+            return redirect()->route('student.payment-methods')
+                ->with('success', 'Payment method updated successfully! We\'ll retry any failed payments automatically.');
+                
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to update payment method', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()
+                ->with('error', 'Failed to update payment method: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get or create Stripe customer for the student
+     */
+    private function getOrCreateStripeCustomer($student)
+    {
+        // Check if customer already exists
+        if ($student->studentProfile && $student->studentProfile->customer_id) {
+            try {
+                return \Stripe\Customer::retrieve($student->studentProfile->customer_id);
+            } catch (\Exception $e) {
+                // Customer not found, create new one
+            }
+        }
+
+        // Create new customer
+        return \Stripe\Customer::create([
+            'email' => $student->email,
+            'name' => $student->name,
+        ]);
     }
 }

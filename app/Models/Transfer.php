@@ -47,23 +47,34 @@ class Transfer extends Model
 
     /**
      * Calculate teacher payment based on session duration and amount.
+     * For premium sessions (high-level teachers after 10 sessions), teacher gets the full extra amount.
      */
-    public static function calculateTeacherPayment($sessionAmount, $duration)
+    public static function calculateTeacherPayment($sessionAmount, $duration, $isPremiumSession = false)
     {
-        $paymentBreakdown = [
+        // Standard rates and teacher payments
+        $standardBreakdown = [
             60 => ['teacher_percentage' => 55.56, 'teacher_amount' => 25.00, 'app_fee' => 20.00], // 25/45 = 55.56%
             45 => ['teacher_percentage' => 53.57, 'teacher_amount' => 18.75, 'app_fee' => 16.25], // 18.75/35 = 53.57%
             30 => ['teacher_percentage' => 50.00, 'teacher_amount' => 12.50, 'app_fee' => 12.50], // 12.50/25 = 50%
         ];
 
-        if (isset($paymentBreakdown[$duration])) {
-            return $paymentBreakdown[$duration];
+        // Premium rates - teacher gets full extra amount
+        $premiumBreakdown = [
+            60 => ['teacher_percentage' => 60.00, 'teacher_amount' => 30.00, 'app_fee' => 20.00], // +£5 to teacher
+            45 => ['teacher_percentage' => 58.06, 'teacher_amount' => 22.50, 'app_fee' => 16.25], // +£3.75 to teacher  
+            30 => ['teacher_percentage' => 54.55, 'teacher_amount' => 15.00, 'app_fee' => 12.50], // +£2.50 to teacher
+        ];
+
+        $breakdown = $isPremiumSession ? $premiumBreakdown : $standardBreakdown;
+
+        if (isset($breakdown[$duration])) {
+            return $breakdown[$duration];
         }
 
         // Fallback: 50% to teacher, 50% app fee
         $teacherAmount = $sessionAmount * 0.5;
         return [
-            'teacher_percentage' => 50.00,
+            'teacher_percentage' => ($teacherAmount / $sessionAmount) * 100,
             'teacher_amount' => $teacherAmount,
             'app_fee' => $sessionAmount - $teacherAmount
         ];
