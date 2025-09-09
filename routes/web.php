@@ -136,6 +136,44 @@ Route::middleware(['auth', 'role:teacher|admin'])->prefix('teacher')->name('teac
     Route::post('/sessions/{session}/homework', [App\Http\Controllers\TeacherController::class, 'storeHomework'])->name('sessions.store-homework');
     Route::get('/stripe-setup', [App\Http\Controllers\TeacherController::class, 'showStripeSetup'])->name('stripe.setup');
     Route::post('/stripe-setup', [App\Http\Controllers\TeacherController::class, 'updateStripeAccount'])->name('stripe.update');
+    
+    // Teacher booking routes (for booking sessions for their students)
+    Route::get('/booking/{student}/calendar', [App\Http\Controllers\TeacherBookingController::class, 'showCalendar'])->name('booking.calendar');
+    Route::post('/booking/{student}/process', [App\Http\Controllers\TeacherBookingController::class, 'processBooking'])->name('booking.process');
+    Route::get('/booking/{student}/payment', [App\Http\Controllers\TeacherBookingController::class, 'showPayment'])->name('booking.payment');
+    Route::post('/booking/{student}/payment/process', [App\Http\Controllers\TeacherBookingController::class, 'processPayment'])->name('booking.payment.process');
+    
+    // Debug route to check premium pricing
+    Route::get('/booking/{student}/debug', function($studentId) {
+        $teacher = auth()->user();
+        $student = \App\Models\User::with(['studentProfile'])->find($studentId);
+        $teacher = \App\Models\User::with(['teacherProfile'])->find($teacher->id);
+        
+        $sessionCount = \App\Models\ChessSession::where('student_id', $student->id)
+                                              ->where('teacher_id', $teacher->id)
+                                              ->count();
+        
+        return response()->json([
+            'student_id' => $student->id,
+            'student_name' => $student->name,
+            'teacher_id' => $teacher->id,
+            'teacher_name' => $teacher->name,
+            'teacher_has_profile' => $teacher->teacherProfile ? true : false,
+            'is_high_level' => $teacher->teacherProfile ? $teacher->teacherProfile->is_high_level : null,
+            'session_count' => $sessionCount,
+            'should_use_premium' => $sessionCount >= 10 && $teacher->teacherProfile && $teacher->teacherProfile->is_high_level == 1,
+            'standard_rates' => [
+                '30' => 25.00,
+                '45' => 35.00,
+                '60' => 45.00
+            ],
+            'premium_rates' => [
+                '30' => 27.50,
+                '45' => 38.75,
+                '60' => 50.00
+            ]
+        ]);
+    })->name('booking.debug');
 });
 
 // Student routes

@@ -87,17 +87,14 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    
-                                        <a href="{{ route('student.booking.calendar') }}" class="inline-flex items-center px-2 py-1 border border-purple-300 rounded text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 hover:text-purple-800 transition-colors duration-200" title="Assign Homework">
-                                            Book Sessions
+                                        <a href="{{ route('teacher.booking.calendar', ['student' => $student->id]) }}" class="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors duration-200" title="Book Session for Student">
+                                            Book Session
                                         </a>
                                         @if(isset($studentStats[$student->id]) && $studentStats[$student->id]['session_count'] > 0)
                                             <a href="{{ route('teacher.sessions') }}?student_id={{ $student->id }}" class="text-green-600 hover:text-green-900 ml-3">
                                                 Sessions
                                             </a>
                                         @endif
-                                      
-
                                     </td>
                                 </tr>
                                 @endforeach
