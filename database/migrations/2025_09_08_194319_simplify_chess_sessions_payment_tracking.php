@@ -12,11 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('chess_sessions', function (Blueprint $table) {
-            // Remove duplicate columns that are now stored in student_profiles
-            $table->dropColumn(['payment_method_id', 'customer_id', 'session_amount', 'payment_processed_at']);
-            
-            // Add simple boolean to track if session is paid
-            $table->boolean('is_paid')->default(false)->after('payment_id');
+            // Add simple boolean to track if session is paid (only if it doesn't exist)
+            if (!Schema::hasColumn('chess_sessions', 'is_paid')) {
+                $table->boolean('is_paid')->default(false)->after('payment_id');
+            }
         });
     }
 
@@ -26,14 +25,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('chess_sessions', function (Blueprint $table) {
-            // Add back the removed columns
-            $table->string('payment_method_id')->nullable()->after('payment_id');
-            $table->string('customer_id')->nullable()->after('payment_method_id');
-            $table->decimal('session_amount', 8, 2)->nullable()->after('customer_id');
-            $table->timestamp('payment_processed_at')->nullable()->after('session_amount');
-            
-            // Remove the boolean column
-            $table->dropColumn('is_paid');
+            // Remove the boolean column (only if it exists)
+            if (Schema::hasColumn('chess_sessions', 'is_paid')) {
+                $table->dropColumn('is_paid');
+            }
         });
     }
 };
