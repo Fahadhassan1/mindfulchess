@@ -73,9 +73,7 @@ class SessionAssignmentRequest extends Notification implements ShouldQueue
             ->line('- Duration: ' . $this->session->duration . ' minutes')
             ->line('- Name: ' . $this->session->session_name)
             ->line('**Student Information:**')
-            ->line('- Name: ' . $this->studentInfo['name'])
-            ->line('- Student ID: #' . str_pad($this->session->student_id, 4, '0', STR_PAD_LEFT));
-            
+            ->line('- Name: ' . $this->studentInfo['name']);
         // Add suggested availability information if available
         if (!empty($this->session->suggested_availability)) {
             $emailMessage->line('**Student\'s Suggested Availability:**');

@@ -54,7 +54,7 @@ class PaymentTransferred extends Notification
             ->line('')
             ->line('💰 **The funds will appear in your bank account within 3-5 business days.**')
             ->line('')
-            ->action('View Invoice in Portal', route('teacher.transfers.invoice', $this->transfer->id))
+            ->action('View All Transfers', route('teacher.transfers'))
             ->line('You can also view all your payment invoices in your teacher portal under the "Transfers" section.')
             ->line('If you have any questions about this transfer, please contact our support team.');
     }

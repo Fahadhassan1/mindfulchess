@@ -44,16 +44,42 @@
                             <!-- Start Time -->
                             <div>
                                 <x-input-label for="start_time" :value="__('Start Time')" />
-                                <input type="time" id="start_time" name="start_time" value="{{ old('start_time') }}" 
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+                                <select id="start_time" name="start_time" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="">Select start time</option>
+                                    @for ($hour = 0; $hour < 24; $hour++)
+                                        @foreach ([0, 15, 30, 45] as $minute)
+                                            @php
+                                                $timeValue = sprintf('%02d:%02d', $hour, $minute);
+                                                $displayTime = \Carbon\Carbon::createFromFormat('H:i', $timeValue)->format('g:i A');
+                                            @endphp
+                                            <option value="{{ $timeValue }}" {{ old('start_time') == $timeValue ? 'selected' : '' }}>
+                                                {{ $displayTime }}
+                                            </option>
+                                        @endforeach
+                                    @endfor
+                                </select>
                                 <x-input-error class="mt-2" :messages="$errors->get('start_time')" />
                             </div>
 
                             <!-- End Time -->
                             <div>
                                 <x-input-label for="end_time" :value="__('End Time')" />
-                                <input type="time" id="end_time" name="end_time" value="{{ old('end_time') }}" 
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+                                <select id="end_time" name="end_time" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="">Select end time</option>
+                                    @for ($hour = 0; $hour < 24; $hour++)
+                                        @foreach ([0, 15, 30, 45] as $minute)
+                                            @php
+                                                $timeValue = sprintf('%02d:%02d', $hour, $minute);
+                                                $displayTime = \Carbon\Carbon::createFromFormat('H:i', $timeValue)->format('g:i A');
+                                            @endphp
+                                            <option value="{{ $timeValue }}" {{ old('end_time') == $timeValue ? 'selected' : '' }}>
+                                                {{ $displayTime }}
+                                            </option>
+                                        @endforeach
+                                    @endfor
+                                </select>
                                 <x-input-error class="mt-2" :messages="$errors->get('end_time')" />
                             </div>
 
@@ -113,4 +139,37 @@
             </div>
         </div>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const startTimeSelect = document.getElementById('start_time');
+        const endTimeSelect = document.getElementById('end_time');
+        
+        startTimeSelect.addEventListener('change', function() {
+            const startTime = this.value;
+            const endOptions = endTimeSelect.options;
+            
+            // Enable all options first
+            for (let i = 0; i < endOptions.length; i++) {
+                endOptions[i].disabled = false;
+                endOptions[i].style.display = 'block';
+            }
+            
+            if (startTime) {
+                // Disable end time options that are before or equal to start time
+                for (let i = 0; i < endOptions.length; i++) {
+                    if (endOptions[i].value && endOptions[i].value <= startTime) {
+                        endOptions[i].disabled = true;
+                        endOptions[i].style.display = 'none';
+                    }
+                }
+                
+                // Reset end time if it's now invalid
+                if (endTimeSelect.value && endTimeSelect.value <= startTime) {
+                    endTimeSelect.value = '';
+                }
+            }
+        });
+    });
+    </script>
 </x-app-layout>

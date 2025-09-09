@@ -310,9 +310,6 @@
                 <h3>To:</h3>
                 <p><strong>{{ $payment->customer_name }}</strong></p>
                 <p>{{ $payment->customer_email }}</p>
-                @if($payment->chessSession && $payment->chessSession->student)
-                    <p>Student ID: {{ $payment->chessSession->student->id }}</p>
-                @endif
             </div>
         </div>
 

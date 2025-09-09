@@ -24,6 +24,7 @@ class ChessSession extends Model
         'duration',
         'lesson_date',
         'payment_id',
+        'is_paid',
         'admin_notes',
         'session_type',
         'session_name',
@@ -39,6 +40,7 @@ class ChessSession extends Model
         'scheduled_at' => 'datetime',
         'completed_at' => 'datetime',
         'amount' => 'decimal:2',
+        'is_paid' => 'boolean',
         'suggested_availability' => 'array',
     ];
     

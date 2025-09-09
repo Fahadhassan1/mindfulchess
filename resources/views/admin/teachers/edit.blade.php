@@ -153,7 +153,7 @@
                                             >
                                             <div>
                                                 <label class="text-gray-700 text-sm font-bold" for="high_level_teacher">
-                                                    High Level Teacher
+                                                    High Level Teacher (Lesson costs £50 per hour)
                                                 </label>
                                                 <p class="text-gray-500 text-xs mt-1">Mark this teacher as a high level teacher</p>
                                             </div>

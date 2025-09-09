@@ -27,7 +27,6 @@
                 <h3 class="font-semibold text-gray-700 mb-2">Student Information</h3>
                 <p class="text-sm text-gray-600">
                     <span class="font-medium">Name:</span> {{ $student->name }}<br>
-                    <span class="font-medium">Email:</span> {{ $student->email }}
                 </p>
             </div>
             

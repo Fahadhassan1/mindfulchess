@@ -360,9 +360,11 @@ class CheckoutController extends Controller
      * @param string $name
      * @param array $paymentData
      * @param array $sessionData
+     * @param string|null $customerId
+     * @param string|null $paymentMethodId
      * @return \App\Models\User|null
      */
-    protected function createStudentAccountAndSendEmail($email, $name, $paymentData, $sessionData)
+    protected function createStudentAccountAndSendEmail($email, $name, $paymentData, $sessionData, $customerId = null, $paymentMethodId = null)
     {
         // Check if a user with this email already exists
         $user = User::where('email', $email)->first();
@@ -387,6 +389,32 @@ class CheckoutController extends Controller
                 // Create student profile if needed
                 if (!$user->studentProfile) {
                     $user->studentProfile()->create();
+                    // Refresh the user to load the newly created student profile
+                    $user->refresh();
+                }
+                
+                // Store payment method information in student profile
+                if ($customerId && $paymentMethodId && $user->studentProfile) {
+                    $user->studentProfile->update([
+                        'customer_id' => $customerId,
+                        'payment_method_id' => $paymentMethodId,
+                        'payment_method_updated_at' => now(),
+                    ]);
+                    
+                    Log::info('Payment method stored in student profile during account creation', [
+                        'student_id' => $user->id,
+                        'customer_id' => $customerId,
+                        'payment_method_id' => $paymentMethodId
+                    ]);
+                } else {
+                    Log::warning('Payment method not stored in student profile during account creation', [
+                        'student_id' => $user->id,
+                        'has_customer_id' => !empty($customerId),
+                        'has_payment_method_id' => !empty($paymentMethodId),
+                        'has_student_profile' => !empty($user->studentProfile),
+                        'customer_id' => $customerId,
+                        'payment_method_id' => $paymentMethodId
+                    ]);
                 }
                 
                 // Store account data for email
@@ -513,6 +541,7 @@ class CheckoutController extends Controller
                 // Create the chess session record (without student_id for now)
                 $chessSession = ChessSession::create([
                     'payment_id' => $payment->id,
+                    'is_paid' => true, // First-time bookings are immediately paid
                     'session_type' => $sessionType,
                     'duration' => (int) ($paymentIntent->metadata['duration'] ?? 60),
                     'session_name' => $sessionDetails['name'] ?? ('Chess Session - ' . $sessionType),
@@ -539,7 +568,9 @@ class CheckoutController extends Controller
                     $customer->email,
                     $customer->name,
                     $paymentData,
-                    $sessionData
+                    $sessionData,
+                    $customer->id,
+                    $paymentMethodId
                 );
                 
                 // If we have a valid student user, update the chess session with the student_id

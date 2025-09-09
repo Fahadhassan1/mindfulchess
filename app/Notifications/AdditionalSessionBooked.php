@@ -23,10 +23,10 @@ class AdditionalSessionBooked extends Notification implements ShouldQueue
      *
      * @param  \App\Models\ChessSession  $session
      * @param  \App\Models\User  $teacher
-     * @param  \App\Models\Payment  $payment
+     * @param  \App\Models\Payment|null  $payment
      * @return void
      */
-    public function __construct(ChessSession $session, User $teacher, Payment $payment)
+    public function __construct(ChessSession $session, User $teacher, Payment $payment = null)
     {
         $this->session = $session;
         $this->teacher = $teacher;
@@ -64,11 +64,19 @@ class AdditionalSessionBooked extends Notification implements ShouldQueue
             ->line('- Session Type: ' . ucfirst($this->session->session_type))
             ->line('- Duration: ' . $this->session->duration . ' minutes')
             ->line('- Scheduled for: ' . $scheduledTime)
-            ->line('- Teacher: ' . $this->teacher->name)
-            ->line('')
-            ->line('**Payment Details:**')
-            ->line('- Amount: £' . number_format($this->payment->amount, 2))
-            ->line('- Date: ' . $this->payment->paid_at->format('d M Y, H:i'));
+            ->line('- Teacher: ' . $this->teacher->name);
+        
+        // Add payment details only if payment exists
+        if ($this->payment) {
+            $message->line('')
+                ->line('**Payment Details:**')
+                ->line('- Amount: £' . number_format((float)$this->payment->amount, 2))
+                ->line('- Date: ' . $this->payment->paid_at->format('d M Y, H:i'));
+        } else {
+            $message->line('')
+                ->line('**Payment Information:**')
+                ->line('- Payment will be processed when your teacher completes the session');
+        }
         
         $message->action('View Session Details', $sessionUrl)
             ->line('')
@@ -93,7 +101,7 @@ class AdditionalSessionBooked extends Notification implements ShouldQueue
             'teacher_id' => $this->teacher->id,
             'teacher_name' => $this->teacher->name,
             'scheduled_at' => $this->session->scheduled_at,
-            'payment_id' => $this->payment->id
+            'payment_id' => $this->payment ? $this->payment->id : null
         ];
     }
 }

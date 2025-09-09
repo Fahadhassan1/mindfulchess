@@ -8,20 +8,37 @@ use App\Models\TeacherAvailability;
 use App\Models\ChessSession;
 use App\Models\Homework;
 use App\Models\Transfer;
+use App\Models\Payment;
 use App\Notifications\HomeworkAssigned;
 use App\Notifications\SessionCompleted;
 use App\Notifications\PaymentTransferred;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
 use Stripe\Transfer as StripeTransfer;
+use Stripe\PaymentIntent;
 use Stripe\Exception\ApiErrorException;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
 class TeacherController extends Controller
 {
+    // Session pricing constants (same as StudentBookingController)
+    const SESSION_PRICES = [
+        '60' => ['price' => 4500, 'name' => 'Online 1 Hour', 'description' => '60 minute online chess lesson'],
+        '45' => ['price' => 3500, 'name' => 'Online 45 Minutes', 'description' => '45 minute online chess lesson'],
+        '30' => ['price' => 2500, 'name' => 'Online 30 Minutes', 'description' => '30 minute online chess lesson']
+    ];
+
+    // Pricing for high-level teachers after 10 sessions (prices in cents)
+    const HIGH_LEVEL_PRICES = [
+        '60' => ['price' => 5000, 'name' => 'Online 1 Hour (Premium)', 'description' => '60 minute online chess lesson with high-level coach'],
+        '45' => ['price' => 3875, 'name' => 'Online 45 Minutes (Premium)', 'description' => '45 minute online chess lesson with high-level coach'],
+        '30' => ['price' => 2750, 'name' => 'Online 30 Minutes (Premium)', 'description' => '30 minute online chess lesson with high-level coach']
+    ];
+
     /**
      * Create a new controller instance.
      *
@@ -416,7 +433,20 @@ class TeacherController extends Controller
         try {
             DB::beginTransaction();
 
-            // Update session status
+            // Process payment if session needs payment processing
+            if ($session->status === 'booked' && !$session->is_paid) {
+                // Process the deferred payment first
+                $payment = $this->processSessionPayment($session);
+                
+                // Update session with payment info
+                $session->update([
+                    'payment_id' => $payment->id,
+                    'is_paid' => true,
+                    'status' => 'booked' // Ensure status is booked after payment
+                ]);
+            }
+
+            // Update session status to completed
             $session->update([
                 'status' => 'completed',
                 'completed_at' => now()
@@ -434,7 +464,7 @@ class TeacherController extends Controller
             DB::commit();
 
             return redirect()->route('teacher.sessions')
-                             ->with('success', 'Session completed successfully! Payment has been transferred to your Stripe account and student notification sent.');
+                             ->with('success', 'Session completed successfully! Payment has been processed and transferred to your Stripe account.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -447,6 +477,137 @@ class TeacherController extends Controller
             \Illuminate\Support\Facades\Log::error('Error completing session: ' . $e->getMessage());
             return redirect()->route('teacher.sessions')
                              ->with('error', 'Error completing session: ' . $e->getMessage() . ' Session status has been reverted.');
+        }
+    }
+
+    /**
+     * Process deferred payment for a session
+     *
+     * @param  \App\Models\ChessSession  $session
+     * @return \App\Models\Payment
+     * @throws \Exception
+     */
+    private function processSessionPayment(ChessSession $session)
+    {
+        $student = $session->student;
+        if (!$student->studentProfile || !$student->studentProfile->payment_method_id || !$student->studentProfile->customer_id) {
+            throw new \Exception('Missing payment information for student: ' . $student->id);
+        }
+
+        // Calculate session amount based on student and teacher
+        $teacher = $session->teacher;
+        $sessionDetails = $this->getSessionPricing($student, $teacher, $session->duration);
+        $sessionAmount = $sessionDetails['price'] / 100; // Convert to pounds
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        try {
+            // Create payment intent with stored payment method from student profile
+            $paymentIntent = PaymentIntent::create([
+                'amount' => $sessionDetails['price'], // Amount in cents
+                'currency' => 'gbp',
+                'customer' => $student->studentProfile->customer_id,
+                'payment_method' => $student->studentProfile->payment_method_id,
+                'confirm' => true,
+                'return_url' => route('student.sessions'),
+                'metadata' => [
+                    'session_id' => $session->id,
+                    'duration' => $session->duration,
+                    'session_type' => $session->session_type,
+                    'booking_type' => 'additional_session_deferred'
+                ]
+            ]);
+
+            if ($paymentIntent->status !== 'succeeded') {
+                throw new \Exception('Payment failed with status: ' . $paymentIntent->status);
+            }
+
+            // Create payment record
+            $payment = Payment::create([
+                'payment_id' => $paymentIntent->id,
+                'customer_id' => $student->studentProfile->customer_id,
+                'customer_email' => $student->email,
+                'customer_name' => $student->name,
+                'amount' => $sessionAmount,
+                'currency' => 'gbp',
+                'status' => 'succeeded',
+                'payment_method_type' => 'card',
+                'payment_method_id' => $student->studentProfile->payment_method_id,
+                'is_default' => false, // Don't override existing defaults
+                'stripe_data' => $paymentIntent->toArray(),
+                'paid_at' => now(),
+            ]);
+
+            Log::info('Deferred payment processed successfully', [
+                'session_id' => $session->id,
+                'payment_id' => $payment->id,
+                'amount' => $sessionAmount
+            ]);
+
+            // Update student profile payment method timestamp
+            $this->updateStudentPaymentMethod($session->student, $student->studentProfile->customer_id, $student->studentProfile->payment_method_id);
+
+            return $payment;
+
+        } catch (ApiErrorException $e) {
+            Log::error('Deferred payment failed', [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+                'payment_method_id' => $student->studentProfile->payment_method_id
+            ]);
+            throw new \Exception('Payment processing failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get the appropriate pricing based on teacher level and session count
+     */
+    private function getSessionPricing($student, $teacher, $duration)
+    {
+        if ($this->shouldUsePremiumPricing($student, $teacher)) {
+            return self::HIGH_LEVEL_PRICES[$duration];
+        }
+        
+        return self::SESSION_PRICES[$duration];
+    }
+
+    /**
+     * Check if the student has reached the premium pricing threshold (10+ sessions) with a high-level teacher
+     */
+    private function shouldUsePremiumPricing($student, $teacher)
+    {
+        // Only apply premium pricing for high-level teachers
+        if (!$teacher->teacherProfile || !$teacher->teacherProfile->high_level_teacher) {
+            return false;
+        }
+        
+        // Count completed sessions with this specific high-level teacher
+        $sessionsCount = ChessSession::where('student_id', $student->id)
+            ->where('teacher_id', $teacher->id)
+            ->whereIn('status', ['completed', 'booked'])
+            ->count();
+        
+        // If 10 or more sessions, use premium pricing
+        return $sessionsCount >= 10;
+    }
+
+    /**
+     * Update student profile with latest payment method
+     */
+    private function updateStudentPaymentMethod($student, $customerId, $paymentMethodId)
+    {
+        if ($student->studentProfile) {
+            $student->studentProfile->update([
+                'customer_id' => $customerId,
+                'payment_method_id' => $paymentMethodId,
+                'payment_method_updated_at' => now(),
+            ]);
+
+            Log::info('Student payment method updated via teacher payment processing', [
+                'student_id' => $student->id,
+                'customer_id' => $customerId,
+                'payment_method_id' => $paymentMethodId
+            ]);
         }
     }
 

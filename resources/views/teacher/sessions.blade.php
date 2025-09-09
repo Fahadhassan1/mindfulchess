@@ -194,6 +194,7 @@
                                                 @php
                                                     $statusColors = [
                                                         'pending' => 'bg-yellow-100 text-yellow-800',
+                                                        'booked' => 'bg-blue-100 text-blue-800',
                                                         'confirmed' => 'bg-blue-100 text-blue-800',
                                                         'completed' => 'bg-green-100 text-green-800',
                                                         'cancelled' => 'bg-red-100 text-red-800',
@@ -204,50 +205,58 @@
                                                 </span>
                                             </td>
                                             
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                @if($session->payment)
-                                                    <div class="text-sm text-gray-900">
-                                                        @if($session->transfer)
-                                                            <div class="text-xs text-green-600">
-                                                                £{{ number_format($session->transfer->amount, 2) }}
-                                                            </div>
-                                                        @elseif($session->status === 'completed' && $session->payment->status === 'paid')
-                                                            <div class="text-xs text-yellow-600">Paid</div>
-                                                        @else
-                                                            <div class="text-xs text-gray-500">Not Paid</div>
-                                                        @endif
-                                                    </div>
-                                                @else
-                                                    <span class="text-sm text-gray-500">No payment</span>
-                                                @endif
-                                            </td>
-                                            
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <div class="flex space-x-2">
-                                                    @if($session->status === 'pending')
-                                                        <form method="POST" action="{{ route('teacher.sessions.confirm', $session) }}" class="inline">
-                                                            @csrf
-                                                            <button type="submit" class="text-blue-600 hover:text-blue-900" title="Confirm Session" onclick="return confirm('Are you sure you want to confirm this session?')">
-                                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                                </svg>
-                                                            </button>
-                                                        </form>
-                                                    @endif
-                                                    
-                                                    @if($session->status === 'booked')
-                                                        <form method="POST" action="{{ route('teacher.sessions.complete', $session) }}" class="inline">
-                                                            @csrf
-                                                            <button type="submit" class="inline-flex items-center px-3 py-1 border border-green-300 rounded text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 hover:text-green-800 transition-colors duration-200" title="Mark as Completed" onclick="return confirm('Are you sure you want to mark this session as completed?\n\nThis action will:\n• Send a feedback email to the student\n• Process your payment\n• Mark the session as finished\n\nThis cannot be undone.')">
-                                                                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                                </svg>
-                                                                Get Paid
-                                                            </button>
-                                                        </form>
-                                                    @endif
-                                                    
-                                                    <a href="{{ route('teacher.sessions.show', $session) }}" class="text-gray-600 hover:text-gray-900" title="View Details">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($session->payment)
+                                    <div class="text-sm text-gray-900">
+                                        @if($session->transfer)
+                                            <div class="text-xs text-green-600">
+                                                £{{ number_format($session->transfer->amount, 2) }}
+                                            </div>
+                                        @elseif($session->status === 'completed' && $session->payment->status === 'paid')
+                                            <div class="text-xs text-yellow-600">Paid</div>
+                                        @else
+                                            <div class="text-xs text-gray-500">Not Paid</div>
+                                        @endif
+                                    </div>
+                                @elseif($session->status === 'booked' && !$session->is_paid)
+                                    <div class="text-sm text-orange-600">
+                                        <div class="text-xs">Payment Pending</div>
+                                    </div>
+                                @elseif($session->status === 'pending')
+                                    <div class="text-sm text-orange-600">
+                                        <div class="text-xs">Payment Pending</div>
+                                    </div>
+                                @elseif($session->is_paid)
+                                    <div class="text-sm text-green-600">
+                                        <div class="text-xs">Paid</div>
+                                    </div>
+                                @else
+                                    <span class="text-sm text-gray-500">Not Paid</span>
+                                @endif
+                            </td>                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    @if($session->status === 'pending')
+                                        <form method="POST" action="{{ route('teacher.sessions.confirm', $session) }}" class="inline">
+                                            @csrf
+                                            <button type="submit" class="text-blue-600 hover:text-blue-900" title="Confirm Session" onclick="return confirm('Are you sure you want to confirm this session?')">
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @endif
+                                    
+                                    @if($session->status === 'booked')
+                                        <form method="POST" action="{{ route('teacher.sessions.complete', $session) }}" class="inline">
+                                            @csrf
+                                            <button type="submit" class="inline-flex items-center px-3 py-1 border border-green-300 rounded text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 hover:text-green-800 transition-colors duration-200" title="Mark as Completed" onclick="return confirm('Are you sure you want to mark this session as completed?\n\nThis action will:\n• {{ !$session->is_paid ? 'Process student payment\n• ' : '' }}Send a feedback email to the student\n• Process your payment\n• Mark the session as finished\n\nThis cannot be undone.')">
+                                                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                Get Paid
+                                            </button>
+                                        </form>
+                                    @endif                                                    <a href="{{ route('teacher.sessions.show', $session) }}" class="text-gray-600 hover:text-gray-900" title="View Details">
                                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>

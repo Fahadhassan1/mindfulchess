@@ -109,10 +109,7 @@
                             <p class="text-sm text-gray-600">Student</p>
                             <p class="font-medium">{{ $transfer->session->student->name }}</p>
                         </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Student ID</p>
-                            <p class="font-medium">{{ $transfer->session->student->id }}</p>
-                        </div>
+
                         <div>
                             <p class="text-sm text-gray-600">Date & Time</p>
                             <p class="font-medium">{{ $transfer->session->session_date ? $transfer->session->session_date->format('d M Y, H:i') : 'Not scheduled' }}</p>

@@ -9,6 +9,7 @@ use App\Models\ChessSession;
 use App\Models\TeacherAvailability;
 use App\Http\Controllers\SessionAssignmentController;
 use App\Notifications\AdditionalSessionBooked;
+use App\Notifications\RateIncreaseNotification;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
@@ -296,40 +297,39 @@ class StudentBookingController extends Controller
         }
 
         try {
-            // Check if student has stored payment method
-            $defaultPayment = Payment::getDefaultForCustomer($student->email);
-            if (!$defaultPayment) {
-                $defaultPayment = Payment::getLatestForCustomer($student->email);
+            // Check if student has stored payment method in profile first, then fallback to payment table
+            $profilePaymentMethod = $student->studentProfile && $student->studentProfile->payment_method_id 
+                ? $student->studentProfile 
+                : null;
+                
+            $defaultPayment = null;
+            if ($profilePaymentMethod) {
+                // Create a payment object-like structure from profile data
+                $defaultPayment = (object) [
+                    'customer_id' => $profilePaymentMethod->customer_id,
+                    'payment_method_id' => $profilePaymentMethod->payment_method_id
+                ];
+            } else {
+                // Fallback to payment table lookup
+                $defaultPayment = Payment::getDefaultForCustomer($student->email);
+                if (!$defaultPayment) {
+                    $defaultPayment = Payment::getLatestForCustomer($student->email);
+                }
             }
 
             if ($defaultPayment && $defaultPayment->customer_id && $defaultPayment->payment_method_id) {
-                // Try to charge the stored payment method
-                $result = $this->chargeStoredPaymentMethod($defaultPayment, $sessionDetails, $student, $request);
+                // Store payment method for later charging when teacher completes session
+                $session = $this->createChessSessionWithStoredPayment($defaultPayment, $student, $teacher, $duration, $request->session_type, $scheduledAt, $sessionDetails);
                 
-                if ($result['success']) {
-                    // Create the chess session
-                    $session = $this->createChessSession($result['payment'], $student, $teacher, $duration, $request->session_type, $scheduledAt, null);
-                    
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Session booked successfully!',
-                        'session_id' => $session->id,
-                        'redirect_url' => route('student.sessions.show', $session)
-                    ]);
-                } else {
-                    // Payment failed, redirect to new payment
-                    return response()->json([
-                        'success' => false,
-                        'payment_failed' => true,
-                        'message' => 'Your stored payment method failed. Please provide a new payment method.',
-                        'redirect_url' => route('student.booking.payment', [
-                            'date' => $request->selected_date,
-                            'time' => $request->selected_time,
-                            'duration' => $duration,
-                            'session_type' => $request->session_type
-                        ])
-                    ]);
-                }
+                // Update student profile with latest payment method
+                $this->updateStudentPaymentMethod($student, $defaultPayment->customer_id, $defaultPayment->payment_method_id);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Session booked successfully! Payment will be processed when your teacher completes the session.',
+                    'session_id' => $session->id,
+                    'redirect_url' => route('student.sessions.show', $session)
+                ]);
             } else {
                 // No stored payment method, redirect to payment page
                 return response()->json([
@@ -460,56 +460,39 @@ class StudentBookingController extends Controller
             // Create or get customer
             $customer = $this->createOrGetStripeCustomer($student);
 
-            $paymentIntent = PaymentIntent::create([
-                'amount' => $sessionDetails['price'],
-                'currency' => 'gbp',
-                'customer' => $customer->id,
-                'payment_method' => $request->payment_method,
-                'confirm' => true,
-                'return_url' => route('student.sessions'),
-                'metadata' => [
-                    'duration' => $duration,
-                    'session_type' => $request->session_type,
-                    'scheduled_date' => $request->date,
-                    'scheduled_time' => $request->time,
-                    'booking_type' => 'additional_session'
-                ]
+            // Store payment method for later charging but create session without payment
+            $paymentMethod = PaymentMethod::create([
+                'type' => 'card',
+                'card' => [
+                    'token' => $request->payment_method,
+                ],
             ]);
 
-            if ($paymentIntent->status === 'succeeded') {
-                // Save payment
-                $payment = Payment::create([
-                    'payment_id' => $paymentIntent->id,
-                    'customer_id' => $customer->id,
-                    'customer_email' => $student->email,
-                    'customer_name' => $student->name,
-                    'amount' => $sessionDetails['price'] / 100,
-                    'currency' => 'gbp',
-                    'status' => 'succeeded',
-                    'payment_method_type' => 'card',
-                    'payment_method_id' => $request->payment_method,
-                    'is_default' => true, // New payment methods become default
-                    'stripe_data' => $paymentIntent->toArray(),
-                    'paid_at' => now(),
-                ]);
+            // Attach payment method to customer
+            $paymentMethod->attach(['customer' => $customer->id]);
 
-                // Set this as the new default payment method
-                $payment->setAsDefault();
+            // Update student profile with new payment method
+            $this->updateStudentPaymentMethod($student, $customer->id, $paymentMethod->id);
 
-                Log::info('New payment method set as default', [
-                    'payment_id' => $payment->id,
-                    'customer_email' => $student->email,
-                    'payment_method_id' => $request->payment_method
-                ]);
+            // Create session with stored payment method info (no payment yet)
+            $scheduledAt = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->time);
+            $session = ChessSession::create([
+                'payment_id' => null, // No payment yet
+                'is_paid' => false, // Session not paid yet
+                'session_type' => $request->session_type,
+                'duration' => $duration,
+                'session_name' => $sessionDetails['name'],
+                'status' => 'booked',
+                'student_id' => $student->id,
+                'teacher_id' => $teacher->id,
+                'scheduled_at' => $scheduledAt,
+                'suggested_availability' => null,
+            ]);
 
-                // Create session
-                $scheduledAt = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->time);
-                $session = $this->createChessSession($payment, $student, $teacher, $duration, $request->session_type, $scheduledAt, null);
+            // Check if this triggers rate increase notification
+            $this->checkAndSendRateIncreaseNotification($session);
 
-                return redirect()->route('student.sessions.show', $session)->with('success', 'Session booked successfully!');
-            }
-
-            return back()->with('error', 'Payment failed. Please try again.');
+            return redirect()->route('student.sessions.show', $session)->with('success', 'Session booked successfully! Payment will be processed when your teacher completes the session.');
 
         } catch (Exception $e) {
             Log::error('Payment processing error: ' . $e->getMessage());
@@ -558,6 +541,7 @@ class StudentBookingController extends Controller
 
         $session = ChessSession::create([
             'payment_id' => $payment->id,
+            'is_paid' => true, // Session is already paid
             'session_type' => $sessionType,
             'duration' => $duration,
             'session_name' => $sessionDetails['name'],
@@ -589,7 +573,75 @@ class StudentBookingController extends Controller
             ]);
         }
 
+        // Check if this triggers rate increase notification
+        $this->checkAndSendRateIncreaseNotification($session);
+
         return $session;
+    }
+
+    /**
+     * Create a chess session with stored payment method (without charging immediately)
+     */
+    private function createChessSessionWithStoredPayment($storedPayment, $student, $teacher, $duration, $sessionType, $scheduledAt, $sessionDetails)
+    {
+        $session = ChessSession::create([
+            'payment_id' => null, // No payment yet
+            'is_paid' => false, // Session not paid yet
+            'session_type' => $sessionType,
+            'duration' => $duration,
+            'session_name' => $sessionDetails['name'],
+            'status' => 'booked', // Session is booked, payment will be processed when teacher completes
+            'student_id' => $student->id,
+            'teacher_id' => $teacher->id,
+            'scheduled_at' => $scheduledAt,
+            'suggested_availability' => null,
+        ]);
+
+        Log::info('Session created with deferred payment', [
+            'session_id' => $session->id,
+            'student_id' => $student->id,
+            'teacher_id' => $teacher->id,
+            'scheduled_at' => $scheduledAt,
+            'amount' => $sessionDetails['price'] / 100
+        ]);
+        
+        // Send notification to student about the session booking (without payment confirmation)
+        try {
+            $student->notify(new \App\Notifications\AdditionalSessionBooked($session, $teacher, null));
+            Log::info('Session booking notification sent', [
+                'student_id' => $student->id,
+                'session_id' => $session->id
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send session booking notification', [
+                'error' => $e->getMessage(),
+                'student_id' => $student->id
+            ]);
+        }
+        // Check if this triggers rate increase notification
+        $this->checkAndSendRateIncreaseNotification($session);
+
+        return $session;
+    }
+
+    /**
+     * Update student profile with latest payment method
+     */
+    private function updateStudentPaymentMethod($student, $customerId, $paymentMethodId)
+    {
+        if ($student->studentProfile) {
+            $student->studentProfile->update([
+                'customer_id' => $customerId,
+                'payment_method_id' => $paymentMethodId,
+                'payment_method_updated_at' => now(),
+            ]);
+
+            Log::info('Student payment method updated', [
+                'student_id' => $student->id,
+                'customer_id' => $customerId,
+                'payment_method_id' => $paymentMethodId
+            ]);
+        }
     }
 
     /**
@@ -614,5 +666,71 @@ class StudentBookingController extends Controller
             'email' => $student->email,
             'name' => $student->name,
         ]);
+    }
+
+    /**
+     * Check if student has reached 10 sessions with a high-level teacher and send rate increase notification
+     *
+     * @param  \App\Models\ChessSession  $session
+     * @return void
+     */
+    private function checkAndSendRateIncreaseNotification(ChessSession $session)
+    {
+        $teacher = $session->teacher;
+        $student = $session->student;
+
+        // Only proceed if this is a high-level teacher
+        if (!$teacher->teacherProfile || !$teacher->teacherProfile->high_level_teacher) {
+            Log::info('No rate increase check - teacher is not high-level', [
+                'teacher_id' => $teacher->id,
+                'student_id' => $student->id
+            ]);
+            return;
+        }
+
+        // Count total sessions between this student and teacher (including the new one just created)
+        $totalSessions = ChessSession::where('student_id', $student->id)
+            ->where('teacher_id', $teacher->id)
+            ->whereIn('status', ['completed', 'booked','cancelled']) // Include cancelled to avoid loopholes
+            ->count();
+ 
+
+        // Check if this is exactly the 10th session and we haven't notified yet
+        if ($totalSessions === 10) {
+            $studentProfile = $student->studentProfile;
+            
+            if ($studentProfile && !$studentProfile->rate_increase_notified) {
+                // Get new rates (high-level rates)
+                $newRates = self::HIGH_LEVEL_PRICES;
+
+                // Mark as notified in student profile
+                $studentProfile->update([
+                    'rate_increase_notified' => true,
+                    'rate_increase_notified_at' => now()
+                ]);
+
+                // Send rate increase notification to student
+                $student->notify(new RateIncreaseNotification(
+                    $session,
+                    $teacher,
+                    $newRates,
+                    $totalSessions
+                ));
+
+                Log::info('Rate increase notification sent at booking', [
+                    'student_id' => $student->id,
+                    'teacher_id' => $teacher->id,
+                    'session_id' => $session->id,
+                    'total_sessions' => $totalSessions
+                ]);
+            } else {
+                Log::info('Rate increase notification not sent - already notified or no profile', [
+                    'student_id' => $student->id,
+                    'teacher_id' => $teacher->id,
+                    'has_profile' => !is_null($studentProfile),
+                    'already_notified' => $studentProfile ? $studentProfile->rate_increase_notified : null
+                ]);
+            }
+        }
     }
 }

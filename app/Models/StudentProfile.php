@@ -25,6 +25,26 @@ class StudentProfile extends Model
         'learning_goals',
         'profile_image',
         'teacher_id',
+        'rate_increase_notified',
+        'rate_increase_notified_at',
+        'rate_rejected',
+        'rate_rejected_teacher_id',
+        'rate_rejected_at',
+        'rate_rejection_reason',
+        'payment_method_id',
+        'customer_id',
+        'payment_method_updated_at',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'rate_increase_notified' => 'boolean',
+        'rate_increase_notified_at' => 'datetime',
+        'rate_rejected' => 'boolean',
+        'rate_rejected_at' => 'datetime',
+        'payment_method_updated_at' => 'datetime',
     ];
 
     /**
@@ -41,5 +61,13 @@ class StudentProfile extends Model
     public function teacher()
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    /**
+     * Get the teacher whose rate was rejected.
+     */
+    public function rejectedRateTeacher()
+    {
+        return $this->belongsTo(User::class, 'rate_rejected_teacher_id');
     }
 }
