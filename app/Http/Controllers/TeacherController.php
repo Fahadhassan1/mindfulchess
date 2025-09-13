@@ -207,7 +207,7 @@ class TeacherController extends Controller
         
         // Validate the request data
         $request->validate([
-            'teaching_type' => 'nullable|string|in:adult,kids',
+            'teaching_type' => 'nullable|string|in:adult,kids,all',
             'bio' => 'nullable|string',
             'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);

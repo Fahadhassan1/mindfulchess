@@ -90,7 +90,7 @@
                                             @if($teacher->teacherProfile->teaching_type == 'adult') bg-purple-100 text-purple-800
                                             @elseif($teacher->teacherProfile->teaching_type == 'kids') bg-green-100 text-green-800
                                             @else bg-gray-100 text-gray-800 @endif">
-                                                {{ ucfirst($teacher->teacherProfile->teaching_type) }}
+                                                {{ ucfirst($teacher->teacherProfile->teaching_type == 'all' ? 'Child & Adult' : $teacher->teacherProfile->teaching_type) }}
                                             </span>
                                         @else
                                             Not specified

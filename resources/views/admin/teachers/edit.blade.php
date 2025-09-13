@@ -71,6 +71,7 @@
                                         <option value="">Select a teaching type</option>
                                         <option value="adult" {{ old('teaching_type', $profile->teaching_type ?? '') == 'adult' ? 'selected' : '' }}>Adult</option>
                                         <option value="kids" {{ old('teaching_type', $profile->teaching_type ?? '') == 'kids' ? 'selected' : '' }}>Kids</option>
+                                        <option value="all" {{ old('teaching_type', $profile->teaching_type ?? '') == 'all' ? 'selected' : '' }}>Child & Adult</option>
                                     </select>
                                     @error('teaching_type')
                                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>

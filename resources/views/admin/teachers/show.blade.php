@@ -33,7 +33,7 @@
                                 <div class="mt-4 text-left">
 
                                     <p class="text-sm font-semibold mt-2">Teaching Type:</p>
-                                    <p>{{ $teacher->teacherProfile && $teacher->teacherProfile->teaching_type ? ucfirst($teacher->teacherProfile->teaching_type) : 'Not specified' }}</p>
+                                    <p>{{ $teacher->teacherProfile && $teacher->teacherProfile->teaching_type ? ($teacher->teacherProfile->teaching_type === 'all' ? 'Child & Adult' : ucfirst($teacher->teacherProfile->teaching_type)) : 'Not specified' }}</p>
                                     
                                     <!-- Experience field has been removed -->
                                     
