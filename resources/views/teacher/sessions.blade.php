@@ -23,7 +23,7 @@
                                 </svg>
                             </div>
                             <div class="ml-4">
-                                <p class="text-sm font-medium text-blue-600">Confirmed</p>
+                                <p class="text-sm font-medium text-blue-600">Booked</p>
                                 <p class="text-2xl font-semibold text-blue-900">{{ $confirmedSessions }}</p>
                             </div>
                         </div>
@@ -89,7 +89,7 @@
                             <select name="status" id="status" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 <option value="">All Statuses</option>
                                 <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="booked" {{ request('status') === 'booked' ? 'selected' : '' }}>Confirmed</option>
+                                <option value="booked" {{ request('status') === 'booked' ? 'selected' : '' }}>Booked</option>
                                 <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
                                 <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                             </select>

@@ -79,6 +79,66 @@ class AdminController extends Controller
             ->get()
             ->pluck('count', 'level')
             ->toArray();
+            
+        // Calculate teacher statistics for session milestones
+        $teachers = User::role('teacher')->with('teacherProfile')->get();
+        $teacherStats = [];
+        
+        foreach ($teachers as $teacher) {
+            // Get all sessions for this teacher
+            $sessions = ChessSession::where('teacher_id', $teacher->id)->get();
+            
+            // Count total sessions
+            $totalSessions = $sessions->count();
+            
+            // Group sessions by student to find recurring students
+            $studentSessions = $sessions->groupBy('student_id');
+            
+            // Count students with more than one session (recurring)
+            $recurringStudents = $studentSessions->filter(function ($sessions) {
+                return $sessions->count() > 1;
+            });
+            
+            $recurringStudentCount = $recurringStudents->count();
+            $totalStudentCount = $studentSessions->count();
+            
+            // Calculate recurring student percentage
+            $recurringPercentage = $totalStudentCount > 0 
+                ? round(($recurringStudentCount / $totalStudentCount) * 100, 2) 
+                : 0;
+                
+            // Calculate session milestone counts
+            $studentsWithTenPlusSessions = 0;
+            $studentsWithTwentyPlusSessions = 0;
+            $studentsWithFiftyPlusSessions = 0;
+            
+            foreach ($studentSessions as $sessions) {
+                $sessionCount = $sessions->count();
+                if ($sessionCount >= 10) $studentsWithTenPlusSessions++;
+                if ($sessionCount >= 20) $studentsWithTwentyPlusSessions++;
+                if ($sessionCount >= 50) $studentsWithFiftyPlusSessions++;
+            }
+            
+            $tenPlusSessionsPercentage = $totalStudentCount > 0 
+                ? round(($studentsWithTenPlusSessions / $totalStudentCount) * 100, 1) 
+                : 0;
+                
+            // Store all stats for this teacher
+            $teacherStats[] = [
+                'id' => $teacher->id,
+                'name' => $teacher->name,
+                'email' => $teacher->email,
+                'is_active' => $teacher->teacherProfile ? $teacher->teacherProfile->is_active : false,
+                'total_sessions' => $totalSessions,
+                'total_students' => $totalStudentCount,
+                'recurring_students' => $recurringStudentCount,
+                'recurring_percentage' => $recurringPercentage,
+                'ten_plus_sessions' => $studentsWithTenPlusSessions,
+                'ten_plus_percentage' => $tenPlusSessionsPercentage,
+                'twenty_plus_sessions' => $studentsWithTwentyPlusSessions,
+                'fifty_plus_sessions' => $studentsWithFiftyPlusSessions,
+            ];
+        }
         
         return view('admin.dashboard', compact(
             'totalUsers', 'totalTeachers', 'totalStudents', 'totalAdmins',
@@ -86,7 +146,7 @@ class AdminController extends Controller
             'totalRevenue', 'thisMonthRevenue', 'totalPayments', 'pendingPayments',
             'totalTransfers', 'pendingTransfers', 'totalFeesCollected',
             'recentTeachers', 'recentStudents', 'recentSessions',
-            'teachingTypes', 'studentLevels'
+            'teachingTypes', 'studentLevels', 'teacherStats'
         ));
     }
 

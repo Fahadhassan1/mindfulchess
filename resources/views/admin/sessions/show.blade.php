@@ -46,7 +46,13 @@
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Amount</label>
-                                <p class="mt-1 text-sm text-gray-900">£{{ number_format($session->payment->amount, 2) }}</p>
+                                <p class="mt-1 text-sm text-gray-900">
+                                    @if($session->payment)
+                                        £{{ number_format($session->payment->amount, 2) }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </p>
                             </div>
                             
                             @if($session->notes)

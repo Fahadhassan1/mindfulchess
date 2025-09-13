@@ -52,7 +52,7 @@
                             <select name="status" id="status" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                 <option value="">All Statuses</option>
                                 <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="confirmed" {{ request('status') == 'confirmed' ? 'selected' : '' }}>Booked</option>
+                                <option value="booked" {{ request('status') == 'booked' ? 'selected' : '' }}>Booked</option>
                                 <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
                                 <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                             </select>
@@ -171,11 +171,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                             @if($session->status == 'pending') bg-yellow-100 text-yellow-800
-                                            @elseif($session->status == 'confirmed') bg-blue-100 text-blue-800
+                                            @elseif($session->status == 'booked') bg-blue-100 text-blue-800
                                             @elseif($session->status == 'completed') bg-green-100 text-green-800
                                             @elseif($session->status == 'cancelled') bg-red-100 text-red-800
                                             @endif">
-                                            @if($session->status == 'confirmed')
+                                            @if($session->status == 'booked')
                                                 Booked
                                             @else
                                                 {{ ucfirst($session->status) }}
@@ -224,7 +224,7 @@
                         <label for="status_select" class="block text-sm font-medium text-gray-700">Status</label>
                         <select name="status" id="status_select" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                             <option value="pending">Pending</option>
-                            <option value="confirmed">Booked</option>
+                            <option value="booked">Booked</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
                         </select>

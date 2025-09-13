@@ -59,7 +59,7 @@
                     </div>
                 </div>
                 
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                {{-- <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 bg-purple-50">
                         <div class="flex items-center">
                             <div class="p-3 rounded-full bg-purple-500 bg-opacity-75">
@@ -73,12 +73,8 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Additional Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                </div> --}}
+                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 bg-yellow-50">
                         <div class="flex items-center">
                             <div class="p-3 rounded-full bg-yellow-500 bg-opacity-75">
@@ -94,53 +90,63 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Additional Stats Cards -->
+            {{-- <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+               
                 
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 bg-emerald-50">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-emerald-500 bg-opacity-75">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24">
-                                    <text x="6" y="18" font-size="16" fill="white" font-family="Arial, Helvetica, sans-serif">£</text>
-                                </svg>
+            </div> --}}
+
+            <!-- Student Session Milestone Stats -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-medium mb-4">{{ __("Student Session Milestones") }}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        @php
+                            $totalStudents = collect($teacherStats)->sum('total_students');
+                            $tenPlusStudents = collect($teacherStats)->sum('ten_plus_sessions');
+                            $twentyPlusStudents = collect($teacherStats)->sum('twenty_plus_sessions');
+                            $fiftyPlusStudents = collect($teacherStats)->sum('fifty_plus_sessions');
+                            
+                            $tenPlusPercentage = $totalStudents > 0 ? round(($tenPlusStudents / $totalStudents) * 100, 1) : 0;
+                            $twentyPlusPercentage = $totalStudents > 0 ? round(($twentyPlusStudents / $totalStudents) * 100, 1) : 0;
+                            $fiftyPlusPercentage = $totalStudents > 0 ? round(($fiftyPlusStudents / $totalStudents) * 100, 1) : 0;
+                        @endphp
+                        
+                        <!-- 10+ Sessions -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-md font-medium text-gray-800">Students with 10+ Sessions</h4>
+                            <div class="mt-2 flex items-baseline">
+                                <span class="text-2xl font-semibold text-blue-600">{{ $tenPlusPercentage }}%</span>
+                                <span class="ml-2 text-sm text-gray-600">of students ({{ $tenPlusStudents }} students)</span>
                             </div>
-                            <div class="ml-5">
-                                <h5 class="text-gray-500 text-sm tracking-wide">Total Revenue</h5>
-                                <h3 class="font-bold text-3xl text-gray-900">£{{ number_format($totalRevenue, 2) }}</h3>
-                                <p class="text-sm text-emerald-600">£{{ number_format($thisMonthRevenue, 2) }} this month</p>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $tenPlusPercentage }}%"></div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 bg-teal-50">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-teal-500 bg-opacity-75">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
+                        
+                        <!-- 20+ Sessions -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-md font-medium text-gray-800">Students with 20+ Sessions</h4>
+                            <div class="mt-2 flex items-baseline">
+                                <span class="text-2xl font-semibold text-blue-600">{{ $twentyPlusPercentage }}%</span>
+                                <span class="ml-2 text-sm text-gray-600">of students ({{ $twentyPlusStudents }} students)</span>
                             </div>
-                            <div class="ml-5">
-                                <h5 class="text-gray-500 text-sm tracking-wide">Payments</h5>
-                                <h3 class="font-bold text-3xl text-gray-900">{{ $totalPayments }}</h3>
-                                <p class="text-sm text-teal-600">{{ $pendingPayments }} pending</p>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $twentyPlusPercentage }}%"></div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 bg-orange-50">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-orange-500 bg-opacity-75">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                </svg>
+                        
+                        <!-- 50+ Sessions -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-md font-medium text-gray-800">Students with 50+ Sessions</h4>
+                            <div class="mt-2 flex items-baseline">
+                                <span class="text-2xl font-semibold text-blue-600">{{ $fiftyPlusPercentage }}%</span>
+                                <span class="ml-2 text-sm text-gray-600">of students ({{ $fiftyPlusStudents }} students)</span>
                             </div>
-                            <div class="ml-5">
-                                <h5 class="text-gray-500 text-sm tracking-wide">Transfers</h5>
-                                <h3 class="font-bold text-3xl text-gray-900">£{{ number_format($totalTransfers, 2) }}</h3>
-                                <p class="text-sm text-orange-600">{{ $pendingTransfers }} pending</p>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $fiftyPlusPercentage }}%"></div>
                             </div>
                         </div>
                     </div>
