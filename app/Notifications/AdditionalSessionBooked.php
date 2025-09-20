@@ -66,6 +66,11 @@ class AdditionalSessionBooked extends Notification implements ShouldQueue
             ->line('- Scheduled for: ' . $scheduledTime)
             ->line('- Teacher: ' . $this->teacher->name);
         
+        // Add meeting link if available
+        if ($this->session->meeting_link) {
+            $message->line('- Meeting Link: ' . $this->session->meeting_link);
+        }
+        
         // Add payment details only if payment exists
         if ($this->payment) {
             $message->line('')

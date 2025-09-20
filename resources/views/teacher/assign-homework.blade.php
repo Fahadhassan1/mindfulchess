@@ -55,7 +55,25 @@
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $existingHomework->status_color }}">
                                                 {{ ucfirst($existingHomework->status) }}
                                             </span>
+                                          
+
                                         </div>
+                                        <!-- Student Feedback -->
+                                        @if($existingHomework->student_feedback)
+                                            <div class="bg-primary-50 border border-yellow-200 rounded-md p-3 mt-4">
+                                                <div class="flex items-start">
+                                                    <svg class="h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-2.126-.306l-3.68 1.226A1 1 0 016 20V9a8 8 0 118 8z"></path>
+                                                </svg>
+                                                    <div>
+                                                        <p class="text-sm text-yellow-800"><span class="font-medium">Student Feedback:</span> {{ $existingHomework->student_feedback }}</p>
+                                                        @if($existingHomework->feedback_submitted_at)
+                                                            <p class="text-xs text-yellow-600 mt-1">Submitted on {{ $existingHomework->feedback_submitted_at->format('M d, Y \a\t g:i A') }}</p>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>

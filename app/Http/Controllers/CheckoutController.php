@@ -399,14 +399,28 @@ class CheckoutController extends Controller
                         'customer_id' => $customerId,
                         'payment_method_id' => $paymentMethodId,
                         'payment_method_updated_at' => now(),
+                        'session_type_preference' => $sessionData['session_type'], // Store the session type preference
                     ]);
                     
-                    Log::info('Payment method stored in student profile during account creation', [
+                    Log::info('Payment method and session preference stored in student profile during account creation', [
                         'student_id' => $user->id,
                         'customer_id' => $customerId,
-                        'payment_method_id' => $paymentMethodId
+                        'payment_method_id' => $paymentMethodId,
+                        'session_type_preference' => $sessionData['session_type']
                     ]);
                 } else {
+                    // Store session type preference even if payment method info is missing
+                    if ($user->studentProfile) {
+                        $user->studentProfile->update([
+                            'session_type_preference' => $sessionData['session_type']
+                        ]);
+                        
+                        Log::info('Session preference stored in student profile during account creation', [
+                            'student_id' => $user->id,
+                            'session_type_preference' => $sessionData['session_type']
+                        ]);
+                    }
+                    
                     Log::warning('Payment method not stored in student profile during account creation', [
                         'student_id' => $user->id,
                         'has_customer_id' => !empty($customerId),

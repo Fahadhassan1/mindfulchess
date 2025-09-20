@@ -60,6 +60,16 @@
                                         <p class="text-gray-900">{{ $session->completed_at->format('F d, Y \a\t g:i A') }}</p>
                                     </div>
                                 @endif
+                                @if($session->meeting_link)
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-500">Meeting Link:</span>
+                                        <p class="text-gray-900">
+                                            <a href="{{ $session->meeting_link }}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
+                                                {{ $session->meeting_link }}
+                                            </a>
+                                        </p>
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
@@ -79,16 +89,27 @@
                                     </div>
                                 </div>
                                 @if($session->student->studentProfile)
-                                    @if($session->student->studentProfile->chess_level)
+                                    @if($session->student->studentProfile->session_type_preference === 'adult' && $session->student->studentProfile->chess_rating)
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Chess Rating:</span>
+                                            <p class="text-gray-900">{{ $session->student->studentProfile->chess_rating }}</p>
+                                        </div>
+                                    @elseif($session->student->studentProfile->level)
                                         <div>
                                             <span class="text-sm font-medium text-gray-500">Chess Level:</span>
-                                            <p class="text-gray-900">{{ $session->student->studentProfile->chess_level }}</p>
+                                            <p class="text-gray-900">{{ ucfirst($session->student->studentProfile->level) }}</p>
                                         </div>
                                     @endif
-                                    @if($session->student->studentProfile->goals)
+                                    @if($session->student->studentProfile->age && $session->student->studentProfile->session_type_preference !== 'adult')
                                         <div>
-                                            <span class="text-sm font-medium text-gray-500">Goals:</span>
-                                            <p class="text-gray-900">{{ $session->student->studentProfile->goals }}</p>
+                                            <span class="text-sm font-medium text-gray-500">Age:</span>
+                                            <p class="text-gray-900">{{ $session->student->studentProfile->age }} years old</p>
+                                        </div>
+                                    @endif
+                                    @if($session->student->studentProfile->learning_goals)
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Learning Goals:</span>
+                                            <p class="text-gray-900">{{ $session->student->studentProfile->learning_goals }}</p>
                                         </div>
                                     @endif
                                 @endif
@@ -148,6 +169,65 @@
                         </div>
                     </div>
 
+                    <!-- Homework Section -->
+                    @if($session->homework->count() > 0)
+                        <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Assigned Homework</h3>
+                            @foreach($session->homework as $homework)
+                                <div class="bg-white rounded-md p-4 border border-blue-200 mb-4">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h4 class="font-semibold text-gray-900">{{ $homework->title }}</h4>
+                                            <p class="text-sm text-gray-600">{{ $homework->description }}</p>
+                                        </div>
+                                        <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full {{ $homework->status_color }}">
+                                            {{ ucfirst(str_replace('_', ' ', $homework->status)) }}
+                                        </span>
+                                    </div>
+                                    
+                                    @if($homework->instructions)
+                                        <div class="mb-3">
+                                            <p class="text-sm font-medium text-gray-700">Instructions:</p>
+                                            <p class="text-sm text-gray-600">{{ $homework->instructions }}</p>
+                                        </div>
+                                    @endif
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                                        <div>
+                                            <p><span class="font-medium">Assigned:</span> {{ $homework->created_at->format('M d, Y g:i A') }}</p>
+                                            @if($homework->completed_at)
+                                                <p><span class="font-medium">Completed:</span> {{ $homework->completed_at->format('M d, Y g:i A') }}</p>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            @if($homework->submitted_at)
+                                                <p><span class="font-medium">Submitted:</span> {{ $homework->submitted_at->format('M d, Y g:i A') }}</p>
+                                            @endif
+                                            @if($homework->feedback_submitted_at)
+                                                <p><span class="font-medium">Feedback Submitted:</span> {{ $homework->feedback_submitted_at->format('M d, Y g:i A') }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <!-- Student Feedback -->
+                                    @if($homework->student_feedback)
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                                            <div class="flex items-start">
+                                                <svg class="h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-2.126-.306l-3.68 1.226A1 1 0 016 20V9a8 8 0 118 8z"></path>
+                                                </svg>
+                                                <div class="flex-1">
+                                                    <h5 class="font-medium text-yellow-800 mb-1">Student's Feedback & Notes:</h5>
+                                                    <p class="text-yellow-700 whitespace-pre-line">{{ $homework->student_feedback }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
                     <!-- Session Actions -->
                     <div class="flex flex-wrap gap-4">
                         @if($session->status === 'pending')
@@ -181,6 +261,19 @@
                                 </svg>
                                 Assign Homework
                             </a>
+                        @endif
+
+                        {{-- Cancel button for unpaid sessions --}}
+                        @if(in_array($session->status, ['booked', 'pending']) && !$session->is_paid && !$session->payment_id)
+                            <form method="POST" action="{{ route('teacher.sessions.cancel', $session) }}" class="inline">
+                                @csrf
+                                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" onclick="return confirm('Are you sure you want to cancel this session?\n\nThis action will:\n• Cancel the session\n• Notify the student\n• Free up the time slot\n\nThis cannot be undone.')">
+                                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                    Cancel Session
+                                </button>
+                            </form>
                         @endif
                         
                 

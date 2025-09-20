@@ -43,7 +43,8 @@
                                     @enderror
                                 </div>
 
-                                <!-- Age -->
+                                <!-- Age (only for kids) -->
+                                @if(!$profile || !$profile->session_type_preference || $profile->session_type_preference === 'kids')
                                 <div class="mb-6">
                                     <label class="block text-gray-700 text-sm font-bold mb-2" for="age">
                                         Age
@@ -54,36 +55,55 @@
                                         id="age" 
                                         value="{{ old('age', $profile->age ?? '') }}" 
                                         min="5"
-                                        max="100"
+                                        max="17"
                                         class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                                     >
                                     @error('age')
                                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
+                                @endif
 
-                                <!-- Chess Level -->
+                                <!-- Chess Level/Rating -->
                                 <div class="mb-6">
-                                    <label class="block text-gray-700 text-sm font-bold mb-2" for="level">
-                                        Chess Level
-                                    </label>
-                                    <select 
-                                        name="level" 
-                                        id="level" 
-                                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                    >
-                                        <option value="">Select your level</option>
-                                        <option value="beginner" {{ old('level', $profile->level ?? '') == 'beginner' ? 'selected' : '' }}>Beginner</option>
-                                        <option value="intermediate" {{ old('level', $profile->level ?? '') == 'intermediate' ? 'selected' : '' }}>Intermediate</option>
-                                        <option value="advanced" {{ old('level', $profile->level ?? '') == 'advanced' ? 'selected' : '' }}>Advanced</option>
-                                        <option value="expert" {{ old('level', $profile->level ?? '') == 'expert' ? 'selected' : '' }}>Expert</option>
-                                    </select>
-                                    @error('level')
-                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
+                                    @if($profile && $profile->session_type_preference === 'adult')
+                                        <label class="block text-gray-700 text-sm font-bold mb-2" for="chess_rating">
+                                            Chess Rating (if applicable)
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            name="chess_rating" 
+                                            id="chess_rating" 
+                                            value="{{ old('chess_rating', $profile->chess_rating ?? '') }}" 
+                                            placeholder="e.g., 1200 FIDE, 1500 Chess.com, or leave blank if no rating"
+                                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                        >
+                                        @error('chess_rating')
+                                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                        @enderror
+                                    @else
+                                        <label class="block text-gray-700 text-sm font-bold mb-2" for="level">
+                                            Chess Level
+                                        </label>
+                                        <select 
+                                            name="level" 
+                                            id="level" 
+                                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                        >
+                                            <option value="">Select your level</option>
+                                            <option value="beginner" {{ old('level', $profile->level ?? '') == 'beginner' ? 'selected' : '' }}>Beginner</option>
+                                            <option value="intermediate" {{ old('level', $profile->level ?? '') == 'intermediate' ? 'selected' : '' }}>Intermediate</option>
+                                            <option value="advanced" {{ old('level', $profile->level ?? '') == 'advanced' ? 'selected' : '' }}>Advanced</option>
+                                            <option value="expert" {{ old('level', $profile->level ?? '') == 'expert' ? 'selected' : '' }}>Expert</option>
+                                        </select>
+                                        @error('level')
+                                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                        @enderror
+                                    @endif
                                 </div>
 
-                                <!-- School -->
+                                <!-- School (only for kids) -->
+                                @if(!$profile || !$profile->session_type_preference || $profile->session_type_preference === 'kids')
                                 <div class="mb-6">
                                     <label class="block text-gray-700 text-sm font-bold mb-2" for="school">
                                         School (Optional)
@@ -99,12 +119,14 @@
                                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
+                                @endif
                             </div>
 
                             <div>
-                                <!-- For students under 18 - Parent Information -->
+                                <!-- For students under 18 - Parent Information (only for kids) -->
+                                @if(!$profile || !$profile->session_type_preference || $profile->session_type_preference === 'kids')
                                 <div class="mb-6">
-                                    <h3 class="font-bold text-gray-700 mb-3">Parent/Guardian Information (For minors)</h3>
+                                    <h3 class="font-bold text-gray-700 mb-3">Parent/Guardian Information</h3>
                                     
                                     <div class="mb-4">
                                         <label class="block text-gray-700 text-sm font-bold mb-2" for="parent_name">
@@ -154,6 +176,7 @@
                                         @enderror
                                     </div>
                                 </div>
+                                @endif
 
                                 <!-- Learning Goals -->
                                 <div class="mb-6">

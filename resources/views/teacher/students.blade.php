@@ -33,7 +33,7 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level/Rating</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sessions</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Session</th>
@@ -45,10 +45,22 @@
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $student->name }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $student->studentProfile->age ?? 'Not specified' }}
+                                        @if($student->studentProfile && $student->studentProfile->session_type_preference === 'adult')
+                                            Adult
+                                        @else
+                                            {{ $student->studentProfile->age ?? 'Not specified' }}
+                                        @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        @if($student->studentProfile && $student->studentProfile->level)
+                                        @if($student->studentProfile && $student->studentProfile->session_type_preference === 'adult')
+                                            @if($student->studentProfile->chess_rating)
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                    {{ $student->studentProfile->chess_rating }}
+                                                </span>
+                                            @else
+                                                <span class="text-gray-500">No rating</span>
+                                            @endif
+                                        @elseif($student->studentProfile && $student->studentProfile->level)
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                             @if($student->studentProfile->level == 'beginner') bg-green-100 text-green-800
                                             @elseif($student->studentProfile->level == 'intermediate') bg-green-100 text-green-800

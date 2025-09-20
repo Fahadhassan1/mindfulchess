@@ -168,7 +168,7 @@ class SessionAssignmentController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $sessionId
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
     public function confirmSessionTime(Request $request, $sessionId)
     {
@@ -212,8 +212,18 @@ class SessionAssignmentController extends Controller
             'teacher_id' => $teacherId,
             'has_selected_time' => $request->has('selected_time'),
             'has_no_suggested_times' => $request->has('no_suggested_times'),
+            'has_meeting_link' => $request->has('meeting_link'),
             'request_data' => $request->all()
         ]);
+        
+        // Validate meeting link
+        try {
+            $request->validate([
+                'meeting_link' => 'required|url|max:255'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        }
         
         // Process the selected time if available
         if ($request->has('selected_time') && !$request->has('no_suggested_times')) {
@@ -237,6 +247,7 @@ class SessionAssignmentController extends Controller
         // Assign the teacher to the session
         try {
             $session->teacher_id = $teacherId;
+            $session->meeting_link = $request->meeting_link;
             $session->save();
             
             // Also update the student's profile to assign this teacher

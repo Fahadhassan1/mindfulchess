@@ -37,6 +37,7 @@
                         <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6 border-l-4 border-green-500">
                             <h3 class="text-lg font-medium text-gray-900">Total Students</h3>
                             <p class="text-3xl font-bold mt-2 text-green-600">{{ $totalStudents }}</p>
+                            <p class="text-sm text-gray-500 mt-1">Students with completed sessions</p>
                         </div>
                         
                         <div class="bg-white overflow-hidden shadow-sm rounded-lg p-6 border-l-4 border-purple-500">
@@ -51,6 +52,48 @@
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                                 <div class="bg-yellow-600 h-2.5 rounded-full" style="width: {{ $recurringPercentage }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Session Milestone Statistics -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Student Session Milestones</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- 10+ Sessions -->
+                            <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
+                                <h4 class="text-md font-medium text-gray-800">Students with 10+ Sessions</h4>
+                                <div class="mt-2 flex items-baseline">
+                                    <span class="text-2xl font-semibold text-blue-600">{{ $tenPlusPercentage }}%</span>
+                                    <span class="ml-2 text-sm text-gray-600">of students ({{ $studentsWithTenPlusSessions }} students)</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ $tenPlusPercentage }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 20+ Sessions -->
+                            <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-green-500">
+                                <h4 class="text-md font-medium text-gray-800">Students with 20+ Sessions</h4>
+                                <div class="mt-2 flex items-baseline">
+                                    <span class="text-2xl font-semibold text-green-600">{{ $twentyPlusPercentage }}%</span>
+                                    <span class="ml-2 text-sm text-gray-600">of students ({{ $studentsWithTwentyPlusSessions }} students)</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                    <div class="bg-green-600 h-2.5 rounded-full" style="width: {{ $twentyPlusPercentage }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 50+ Sessions -->
+                            <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-purple-500">
+                                <h4 class="text-md font-medium text-gray-800">Students with 50+ Sessions</h4>
+                                <div class="mt-2 flex items-baseline">
+                                    <span class="text-2xl font-semibold text-purple-600">{{ $fiftyPlusPercentage }}%</span>
+                                    <span class="ml-2 text-sm text-gray-600">of students ({{ $studentsWithFiftyPlusSessions }} students)</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                    <div class="bg-purple-600 h-2.5 rounded-full" style="width: {{ $fiftyPlusPercentage }}%"></div>
+                                </div>
                             </div>
                         </div>
                     </div>

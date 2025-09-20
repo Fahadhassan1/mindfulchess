@@ -76,16 +76,28 @@ class StudentController extends Controller
     {
         $user = auth()->user();
         
-        $validated = $request->validate([
-            'age' => 'nullable|integer|min:5|max:100',
-            'level' => 'nullable|string|max:255',
-            'parent_name' => 'nullable|string|max:255',
-            'parent_email' => 'nullable|email|max:255',
-            'parent_phone' => 'nullable|string|max:20',
-            'school' => 'nullable|string|max:255',
+        // Get current profile to check session type preference
+        $currentProfile = \App\Models\StudentProfile::where('user_id', $user->id)->first();
+        $isAdult = $currentProfile && $currentProfile->session_type_preference === 'adult';
+        
+        $validationRules = [
             'learning_goals' => 'nullable|string',
             'profile_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
+        ];
+        
+        // Add conditional validation rules based on user type
+        if ($isAdult) {
+            $validationRules['chess_rating'] = 'nullable|string|max:255';
+        } else {
+            $validationRules['age'] = 'nullable|integer|min:5|max:17';
+            $validationRules['level'] = 'nullable|string|max:255';
+            $validationRules['parent_name'] = 'nullable|string|max:255';
+            $validationRules['parent_email'] = 'nullable|email|max:255';
+            $validationRules['parent_phone'] = 'nullable|string|max:20';
+            $validationRules['school'] = 'nullable|string|max:255';
+        }
+        
+        $validated = $request->validate($validationRules);
         
         if ($request->hasFile('profile_image')) {
             $image = $request->file('profile_image');
@@ -372,6 +384,36 @@ class StudentController extends Controller
         $originalName = basename($homework->attachment_path);
         
         return response()->download($filePath, $originalName);
+    }
+
+    /**
+     * Submit feedback for homework.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Homework  $homework
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function submitHomeworkFeedback(Request $request, Homework $homework)
+    {
+        $student = auth()->user();
+        
+        // Check if the homework belongs to the student
+        if ($homework->student_id !== $student->id) {
+            return redirect()->route('student.homework')
+                             ->with('error', 'You are not authorized to update this homework.');
+        }
+        
+        $request->validate([
+            'student_feedback' => 'required|string|max:2000',
+        ]);
+        
+        $homework->update([
+            'student_feedback' => $request->student_feedback,
+            'feedback_submitted_at' => now(),
+        ]);
+        
+        return redirect()->route('student.homework.show', $homework)
+                         ->with('success', 'Your feedback has been submitted successfully! Your teacher will be able to see your notes.');
     }
 
     /**

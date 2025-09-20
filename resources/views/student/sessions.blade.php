@@ -56,8 +56,15 @@
                                 <div class="text-sm text-gray-500">Type: {{ ucfirst($session->session_type) }}</div>
                                 <div class="text-sm text-gray-500">Duration: {{ $session->duration }} minutes</div>
                                 @if($session->scheduled_at)
-                                    <div class="text-sm text-gray-500">
+                                    <div class="text-sm text-gray-500 flex items-center">
                                         Scheduled: {{ $session->scheduled_at->format('M d, Y H:i') }}
+                                        @if($session->meeting_link)
+                                            <a href="{{ $session->meeting_link }}" target="_blank">
+                                                <svg class="ml-2 h-4 w-4 text-blue-500" title="Meeting link available" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                                </svg>
+                                            </a>
+                                        @endif
                                     </div>
                                 @endif
                                 <div class="text-sm text-gray-500">

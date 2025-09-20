@@ -45,6 +45,13 @@
                         @if($session->completed_at)
                             <p class="mb-2"><span class="font-medium">Completed On:</span> {{ $session->completed_at->format('F d, Y g:i A') }}</p>
                         @endif
+                        @if($session->meeting_link)
+                            <p class="mb-2"><span class="font-medium">Meeting Link:</span> 
+                                <a href="{{ $session->meeting_link }}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
+                                    {{ $session->meeting_link }}
+                                </a>
+                            </p>
+                        @endif
                         @if($session->notes)
                             <p class="mt-4"><span class="font-medium">Notes:</span></p>
                             <p class="mt-1 text-gray-600">{{ $session->notes }}</p>

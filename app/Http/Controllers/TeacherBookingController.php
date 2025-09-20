@@ -57,8 +57,8 @@ class TeacherBookingController extends Controller
         // Reload teacher with availability
         $teacher = User::with(['teacherProfile', 'availability'])->find($teacher->id);
         
-        // Get teacher availability for the next 30 days
-        $availability = $this->getTeacherAvailabilityForCalendar($teacher);
+        // Get teacher availability for the next 30 days with default 60-minute slots
+        $availability = $this->getTeacherAvailabilityForCalendar($teacher, 60);
         
         // Check if student has a previous payment method
         $hasStoredPaymentMethod = $this->hasStoredPaymentMethod($student);
@@ -91,9 +91,35 @@ class TeacherBookingController extends Controller
     }
 
     /**
-     * Get teacher availability formatted for calendar display
+     * Get availability for specific duration (AJAX endpoint)
      */
-    private function getTeacherAvailabilityForCalendar($teacher)
+    public function getAvailabilityForDuration(Request $request, $studentId)
+    {
+        $request->validate([
+            'duration' => 'required|in:30,45,60'
+        ]);
+
+        $teacher = auth()->user();
+        $student = User::with(['studentProfile'])->find($studentId);
+        
+        // Verify this student is assigned to this teacher
+        if (!$student || !$student->studentProfile || $student->studentProfile->teacher_id != $teacher->id) {
+            return response()->json(['error' => 'Student not found or not assigned to you'], 404);
+        }
+
+        // Reload teacher with availability
+        $teacher = User::with(['teacherProfile', 'availability'])->find($teacher->id);
+        
+        // Get teacher availability for the selected duration
+        $availability = $this->getTeacherAvailabilityForCalendar($teacher, (int)$request->duration);
+        
+        return response()->json(['availability' => $availability]);
+    }
+
+    /**
+     * Get teacher availability formatted for calendar display with specific time slots
+     */
+    private function getTeacherAvailabilityForCalendar($teacher, $duration = 60)
     {
         $availability = [];
         $dayMapping = [
@@ -133,38 +159,64 @@ class TeacherBookingController extends Controller
                 $slotStartTime = $slot->start_time;
                 $slotEndTime = $slot->end_time;
                 
-                // Check if this slot conflicts with any existing booking
-                $isBooked = $existingBookings->contains(function ($booking) use ($slotDate, $slotStartTime, $slotEndTime) {
-                    if ($booking['date'] !== $slotDate) {
-                        return false;
-                    }
-                    
-                    // Check for time overlap
-                    $bookingStart = Carbon::createFromFormat('H:i:s', $booking['start_time']);
-                    $bookingEnd = Carbon::createFromFormat('H:i:s', $booking['end_time']);
-                    $slotStart = Carbon::createFromFormat('H:i:s', $slotStartTime);
-                    $slotEnd = Carbon::createFromFormat('H:i:s', $slotEndTime);
-                    
-                    // Check if there's any overlap between the booking and the slot
-                    return ($bookingStart < $slotEnd && $bookingEnd > $slotStart);
-                });
-
-                if (!$isBooked) {
-                    $availability[] = [
-                        'date' => $slotDate,
-                        'day' => $startDate->format('l'),
-                        'start_time' => $slotStartTime,
-                        'end_time' => $slotEndTime,
-                        'formatted_start' => Carbon::createFromFormat('H:i:s', $slotStartTime)->format('g:i A'),
-                        'formatted_end' => Carbon::createFromFormat('H:i:s', $slotEndTime)->format('g:i A'),
-                    ];
-                }
+                // Generate specific time slots based on duration
+                $specificSlots = $this->generateSpecificTimeSlots($slotDate, $slotStartTime, $slotEndTime, $duration, $existingBookings);
+                $availability = array_merge($availability, $specificSlots);
             }
             
             $startDate->addDay();
         }
         
         return collect($availability)->groupBy('date');
+    }
+
+    /**
+     * Generate specific time slots within an availability window
+     */
+    private function generateSpecificTimeSlots($date, $startTime, $endTime, $duration, $existingBookings)
+    {
+        $slots = [];
+        $currentTime = Carbon::createFromFormat('H:i:s', $startTime);
+        $endTimeCarbon = Carbon::createFromFormat('H:i:s', $endTime);
+        
+        while ($currentTime->copy()->addMinutes($duration)->lte($endTimeCarbon)) {
+            $slotStart = $currentTime->format('H:i:s');
+            $slotEnd = $currentTime->copy()->addMinutes($duration)->format('H:i:s');
+            
+            // Check if this specific slot conflicts with any existing booking
+            $isBooked = $existingBookings->contains(function ($booking) use ($date, $slotStart, $slotEnd) {
+                if ($booking['date'] !== $date) {
+                    return false;
+                }
+                
+                // Check for time overlap
+                $bookingStart = Carbon::createFromFormat('H:i:s', $booking['start_time']);
+                $bookingEnd = Carbon::createFromFormat('H:i:s', $booking['end_time']);
+                $slotStartCarbon = Carbon::createFromFormat('H:i:s', $slotStart);
+                $slotEndCarbon = Carbon::createFromFormat('H:i:s', $slotEnd);
+                
+                // Check if there's any overlap between the booking and the slot
+                return ($bookingStart < $slotEndCarbon && $bookingEnd > $slotStartCarbon);
+            });
+
+            if (!$isBooked) {
+                $slots[] = [
+                    'date' => $date,
+                    'day' => Carbon::createFromFormat('Y-m-d', $date)->format('l'),
+                    'start_time' => $slotStart,
+                    'end_time' => $slotEnd,
+                    'formatted_start' => Carbon::createFromFormat('H:i:s', $slotStart)->format('g:i A'),
+                    'formatted_end' => Carbon::createFromFormat('H:i:s', $slotEnd)->format('g:i A'),
+                    'duration' => $duration,
+                ];
+            }
+            
+            // Move to next slot by the full duration (not 15 minutes)
+            // This ensures proper gaps between sessions
+            $currentTime->addMinutes($duration);
+        }
+        
+        return $slots;
     }
 
     /**
@@ -191,7 +243,7 @@ class TeacherBookingController extends Controller
             'selected_date' => 'required|date|after_or_equal:today',
             'selected_time' => 'required',
             'duration' => 'required|in:30,45,60',
-            'session_type' => 'required|in:adult,kids'
+            'meeting_link' => 'nullable|url|max:500'
         ]);
 
         $teacher = auth()->user();
@@ -200,6 +252,13 @@ class TeacherBookingController extends Controller
         // Verify this student is assigned to this teacher
         if (!$student || !$student->studentProfile || $student->studentProfile->teacher_id != $teacher->id) {
             return response()->json(['error' => 'This student is not assigned to you.'], 403);
+        }
+
+        // Automatically determine session type based on stored preference, fallback to age-based logic
+        $sessionType = 'adult'; // default
+        if ($student->studentProfile && $student->studentProfile->session_type_preference) {
+            // Use the stored session type preference from their first booking
+            $sessionType = $student->studentProfile->session_type_preference;
         }
 
         $duration = $request->duration;
@@ -246,7 +305,7 @@ class TeacherBookingController extends Controller
 
             if ($defaultPayment && $defaultPayment->customer_id && $defaultPayment->payment_method_id) {
                 // Store payment method for later charging when teacher completes session
-                $session = $this->createChessSessionWithStoredPayment($defaultPayment, $student, $teacher, $duration, $request->session_type, $scheduledAt, $sessionDetails);
+                $session = $this->createChessSessionWithStoredPayment($defaultPayment, $student, $teacher, $duration, $sessionType, $scheduledAt, $sessionDetails, $request->meeting_link);
                 
                 // Update student profile with latest payment method
                 $this->updateStudentPaymentMethod($student, $defaultPayment->customer_id, $defaultPayment->payment_method_id);
@@ -268,7 +327,7 @@ class TeacherBookingController extends Controller
                         'date' => $request->selected_date,
                         'time' => $request->selected_time,
                         'duration' => $duration,
-                        'session_type' => $request->session_type
+                        'session_type' => $sessionType
                     ])
                 ]);
             }
@@ -317,8 +376,7 @@ class TeacherBookingController extends Controller
             'payment_method' => 'required',
             'date' => 'required|date',
             'time' => 'required',
-            'duration' => 'required|in:30,45,60',
-            'session_type' => 'required'
+            'duration' => 'required|in:30,45,60'
         ]);
 
         $teacher = auth()->user();
@@ -327,6 +385,13 @@ class TeacherBookingController extends Controller
         // Verify this student is assigned to this teacher
         if (!$student || !$student->studentProfile || $student->studentProfile->teacher_id != $teacher->id) {
             return back()->with('error', 'This student is not assigned to you.');
+        }
+
+        // Automatically determine session type based on stored preference, fallback to age-based logic
+        $sessionType = 'adult'; // default
+        if ($student->studentProfile && $student->studentProfile->session_type_preference) {
+            // Use the stored session type preference from their first booking
+            $sessionType = $student->studentProfile->session_type_preference;
         }
 
         $duration = $request->duration;
@@ -357,7 +422,7 @@ class TeacherBookingController extends Controller
             $session = ChessSession::create([
                 'payment_id' => null, // No payment yet
                 'is_paid' => false, // Session not paid yet
-                'session_type' => $request->session_type,
+                'session_type' => $sessionType,
                 'duration' => $duration,
                 'session_name' => $sessionDetails['name'],
                 'status' => 'booked',
@@ -381,7 +446,7 @@ class TeacherBookingController extends Controller
     /**
      * Create a chess session with stored payment method (without charging immediately)
      */
-    private function createChessSessionWithStoredPayment($storedPayment, $student, $teacher, $duration, $sessionType, $scheduledAt, $sessionDetails)
+    private function createChessSessionWithStoredPayment($storedPayment, $student, $teacher, $duration, $sessionType, $scheduledAt, $sessionDetails, $meetingLink = null)
     {
         $session = ChessSession::create([
             'payment_id' => null, // No payment yet
@@ -389,6 +454,7 @@ class TeacherBookingController extends Controller
             'session_type' => $sessionType,
             'duration' => $duration,
             'session_name' => $sessionDetails['name'],
+            'meeting_link' => $meetingLink,
             'status' => 'booked', // Session is booked, payment will be processed when teacher completes
             'student_id' => $student->id,
             'teacher_id' => $teacher->id,

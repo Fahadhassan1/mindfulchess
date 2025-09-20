@@ -132,6 +132,56 @@
                         </form>
                     </div>
 
+                    <!-- Student Feedback Section -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-3">Notes & Feedback for Your Teacher</h3>
+                        
+                        @if($homework->student_feedback)
+                            <!-- Show existing feedback -->
+                            <div class="bg-blue-50 rounded-md p-4 border border-blue-200 mb-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-medium text-blue-900">Your Previous Feedback:</h4>
+                                    @if($homework->feedback_submitted_at)
+                                        <span class="text-sm text-blue-600">
+                                            Submitted {{ $homework->feedback_submitted_at->format('M d, Y g:i A') }}
+                                        </span>
+                                    @endif
+                                </div>
+                                <p class="text-blue-800 whitespace-pre-line">{{ $homework->student_feedback }}</p>
+                            </div>
+                        @endif
+                        
+                        <!-- Feedback form -->
+                        <form method="POST" action="{{ route('student.homework.submit-feedback', $homework) }}" class="bg-gray-50 rounded-md p-4">
+                            @csrf
+                            @method('PUT')
+                            
+                            <div class="mb-4">
+                                <label for="student_feedback" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Share your thoughts about this homework:
+                                </label>
+                                <p class="text-sm text-gray-500 mb-3">
+                                    Tell your teacher about any struggles, questions, or topics you'd like help with in the next lesson. 
+                                    You can also share what you found interesting or what you learned!
+                                </p>
+                                <textarea name="student_feedback" id="student_feedback" rows="4" 
+                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                                          placeholder="Example: I found the opening moves challenging and would like to practice them more in our next lesson. The endgame puzzle was interesting though!"
+                                          maxlength="2000">{{ old('student_feedback', $homework->student_feedback) }}</textarea>
+                                <div class="text-right mt-1">
+                                    <span class="text-xs text-gray-500">Maximum 2000 characters</span>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-2.126-.306l-3.68 1.226A1 1 0 016 20V9a8 8 0 118 8z"></path>
+                                </svg>
+                                {{ $homework->student_feedback ? 'Update Feedback' : 'Submit Feedback' }}
+                            </button>
+                        </form>
+                    </div>
+
                     <!-- Actions -->
                     <div class="flex justify-between items-center pt-6 border-t border-gray-200">
                         <a href="{{ route('student.sessions.show', $homework->session) }}" 

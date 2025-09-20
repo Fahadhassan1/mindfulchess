@@ -28,7 +28,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #532563 0%, #764ba2 100%);
             color: white;
             padding: 30px;
             text-align: center;
@@ -55,7 +55,7 @@
         
         .company-info h3,
         .customer-info h3 {
-            color: #667eea;
+            color: #532563;
             margin-bottom: 15px;
             font-size: 1.2rem;
         }
@@ -115,7 +115,7 @@
         }
         
         .invoice-table th {
-            background: #667eea;
+            background: #532563;
             color: white;
             padding: 15px;
             text-align: left;
@@ -151,12 +151,12 @@
         }
         
         .total-row.final {
-            border-top: 2px solid #667eea;
+            border-top: 2px solid #532563;
             margin-top: 15px;
             padding-top: 15px;
             font-size: 1.3rem;
             font-weight: 700;
-            color: #667eea;
+            color: #532563;
         }
         
         .discount-info {
@@ -231,7 +231,7 @@
         }
         
         .btn-primary {
-            background: #667eea;
+            background: #532563;
             color: white;
         }
         
@@ -303,8 +303,8 @@
                 <h3>From:</h3>
                 <p><strong>Mindful Chess</strong></p>
                 <p>Online Chess Learning Platform</p>
-                <p>Email: support@mindfulchess.com</p>
-                <p>Website: www.mindfulchess.com</p>
+                <p>Email: teaching@mindfulchess.co.uk</p>
+                <p>Website: www.mindfulchess.org</p>
             </div>
             <div class="customer-info">
                 <h3>To:</h3>
@@ -330,8 +330,12 @@
                 </div>
                 <div class="meta-item">
                     <strong>Status:</strong>
-                    <span class="status-badge status-{{ $payment->status }}">
+                      <span class="status-badge status-{{ $payment->status }}">
+                     @if($payment->status === 'succeeded')
+                            {{ ucfirst('Completed') }}
+                    @else
                         {{ ucfirst($payment->status) }}
+                    @endif
                     </span>
                 </div>
             </div>

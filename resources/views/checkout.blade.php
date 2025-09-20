@@ -143,6 +143,34 @@
             border: 1px solid #000000;
             border-radius: 4px;
             transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            cursor: pointer;
+        }
+        
+        /* Specific styling for date inputs to ensure full clickable area */
+        .form-control[type="date"] {
+            /* padding: 0.75rem; */
+            position: relative;
+            cursor: pointer;
+        }
+        
+        /* Ensure the date picker icon is properly positioned and clickable */
+        .form-control[type="date"]::-webkit-calendar-picker-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: auto;
+            height: auto;
+            color: transparent;
+            background: transparent;
+            cursor: pointer;
+        }
+        
+        /* For Firefox date inputs */
+        .form-control[type="date"]::-moz-focus-inner {
+            border: 0;
+            padding: 0;
         }
         .form-control:focus {
             color: #495057;
@@ -918,7 +946,7 @@
                                 <div class="radio-option">
                                     <input type="radio" name="session_type" id="session_adult" value="adult" 
                                            {{ $sessionType == 'adult' ? 'checked' : '' }} required>
-                                    <label for="session_adult" class="radio-label">Adult</label>
+                                    <label for="session_adult" class="radio-label">Adults</label>
                                 </div>
                                 <div class="radio-option">
                                     <input type="radio" name="session_type" id="session_kids" value="kids" 

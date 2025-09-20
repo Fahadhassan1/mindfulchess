@@ -60,6 +60,10 @@
                             <x-input-label for="role" :value="__('Role')" />
                             <select name="role" id="role" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                 @foreach($roles as $role)
+                                    {{-- // don't show the admin role --}}
+                                    @if($role->name === 'admin')
+                                        @continue
+                                    @endif
                                     <option value="{{ $role->name }}" {{ $user->hasRole($role->name) ? 'selected' : '' }}>{{ ucfirst($role->name) }}</option>
                                 @endforeach
                             </select>

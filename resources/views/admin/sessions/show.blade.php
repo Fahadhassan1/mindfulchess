@@ -55,6 +55,17 @@
                                 </p>
                             </div>
                             
+                            @if($session->meeting_link)
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Meeting Link</label>
+                                <p class="mt-1 text-sm text-gray-900">
+                                    <a href="{{ $session->meeting_link }}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">
+                                        {{ $session->meeting_link }}
+                                    </a>
+                                </p>
+                            </div>
+                            @endif
+                            
                             @if($session->notes)
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Session Notes</label>

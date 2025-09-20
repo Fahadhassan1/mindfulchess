@@ -88,6 +88,13 @@
                                             </span>
                                         @endforeach
                                     </td>
+                                    {{-- // can't be delete or edit admin user --}}
+                                    @if($user->hasRole('admin'))
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
+                                            --
+                                        </td>
+                                        @continue
+                                    @else
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <a href="{{ route('admin.users.edit', $user) }}" class="text-blue-600 hover:text-blue-900 mr-2">Edit</a>
                                         
@@ -97,6 +104,7 @@
                                             <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
                                         </form>
                                     </td>
+                                    @endif
                                 </tr>
                                 @endforeach
                                 

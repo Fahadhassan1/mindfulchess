@@ -5,7 +5,7 @@
                 Admin Transfer Invoice - Transfer #{{ $transfer->id }}
             </h2>
              <button onclick="window.print()" 
-                            class="inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200">
+                            class="bg-primary-800 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded">
                         <i class="fas fa-print mr-2"></i>
                         Print Invoice
             </button>
@@ -19,7 +19,7 @@
                     <div class="max-w-4xl mx-auto">
         <!-- Invoice Header -->
         <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <div class="bg-red-600 text-white px-6 py-4">
+            <div class="bg-primary-800 text-white px-6 py-4">
                 <div class="flex justify-between items-center">
                     <div>
                         <h1 class="text-2xl font-bold">Admin Transfer Invoice</h1>
@@ -275,7 +275,7 @@
     }
     
     .bg-red-600 {
-        background-color: #dc2626 !important;
+        background-color: #532563 !important;
         -webkit-print-color-adjust: exact;
     }
 }

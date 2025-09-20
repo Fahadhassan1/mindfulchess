@@ -81,6 +81,30 @@ class TeacherController extends Controller
             ? round(($recurringStudents / $totalStudents) * 100, 2) 
             : 0;
             
+        // Calculate session milestone statistics (like admin dashboard)
+        $studentsWithTenPlusSessions = 0;
+        $studentsWithTwentyPlusSessions = 0;
+        $studentsWithFiftyPlusSessions = 0;
+        
+        foreach ($studentSessions as $sessions) {
+            $sessionCount = $sessions->count();
+            if ($sessionCount >= 10) $studentsWithTenPlusSessions++;
+            if ($sessionCount >= 20) $studentsWithTwentyPlusSessions++;
+            if ($sessionCount >= 50) $studentsWithFiftyPlusSessions++;
+        }
+        
+        $tenPlusPercentage = $totalStudents > 0 
+            ? round(($studentsWithTenPlusSessions / $totalStudents) * 100, 1) 
+            : 0;
+            
+        $twentyPlusPercentage = $totalStudents > 0 
+            ? round(($studentsWithTwentyPlusSessions / $totalStudents) * 100, 1) 
+            : 0;
+            
+        $fiftyPlusPercentage = $totalStudents > 0 
+            ? round(($studentsWithFiftyPlusSessions / $totalStudents) * 100, 1) 
+            : 0;
+            
         // Calculate monthly session counts for the past 6 months
         $monthlySessions = [];
         $monthlyLabels = [];
@@ -109,6 +133,12 @@ class TeacherController extends Controller
             'totalStudents',
             'recurringStudents',
             'recurringPercentage',
+            'studentsWithTenPlusSessions',
+            'studentsWithTwentyPlusSessions',
+            'studentsWithFiftyPlusSessions',
+            'tenPlusPercentage',
+            'twentyPlusPercentage',
+            'fiftyPlusPercentage',
             'monthlySessions',
             'monthlyLabels',
             'monthlyData'
@@ -350,8 +380,8 @@ class TeacherController extends Controller
         // Get all booked sessions for this teacher
         $sessionsQuery = ChessSession::where('teacher_id', $teacher->id)
             ->with(['student', 'payment', 'transfer'])
-            ->orderBy('scheduled_at', 'desc');
-            
+            ->orderBy('created_at', 'desc');
+
         // Filter by status if provided
         if ($request->filled('status')) {
             $sessionsQuery->where('status', $request->status);
@@ -378,6 +408,7 @@ class TeacherController extends Controller
         $confirmedSessions = ChessSession::where('teacher_id', $teacher->id)->where('status', 'booked')->count();
         $completedSessions = ChessSession::where('teacher_id', $teacher->id)->where('status', 'completed')->count();
         $pendingSessions = ChessSession::where('teacher_id', $teacher->id)->where('status', 'pending')->count();
+        
         
         return view('teacher.sessions', compact(
             'sessions', 
@@ -477,6 +508,63 @@ class TeacherController extends Controller
             \Illuminate\Support\Facades\Log::error('Error completing session: ' . $e->getMessage());
             return redirect()->route('teacher.sessions')
                              ->with('error', 'Error completing session: ' . $e->getMessage() . ' Session status has been reverted.');
+        }
+    }
+
+    /**
+     * Cancel a booked session (only for unpaid sessions)
+     */
+    public function cancelSession(ChessSession $session)
+    {
+        // Verify the teacher owns this session
+        if ($session->teacher_id !== auth()->id()) {
+            return redirect()->route('teacher.sessions')
+                             ->with('error', 'You can only cancel your own sessions.');
+        }
+
+        // Only allow cancellation of unpaid sessions
+        if ($session->is_paid || $session->payment_id) {
+            return redirect()->route('teacher.sessions')
+                             ->with('error', 'Cannot cancel a session that has already been paid for.');
+        }
+
+        // Only allow cancellation of booked or pending sessions
+        if (!in_array($session->status, ['booked', 'pending'])) {
+            return redirect()->route('teacher.sessions')
+                             ->with('error', 'Cannot cancel a session with status: ' . $session->status);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Update session status to cancelled
+            $session->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'cancellation_reason' => 'Cancelled by teacher'
+            ]);
+
+            // Send notification to student about cancellation
+            $student = $session->student;
+            if ($student) {
+                try {
+                    $student->notify(new \App\Notifications\SessionCancelled($session, auth()->user()));
+                } catch (\Exception $e) {
+                    // Log notification failure but don't fail the cancellation
+                    \Illuminate\Support\Facades\Log::error('Failed to send cancellation notification: ' . $e->getMessage());
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('teacher.sessions')
+                             ->with('success', 'Session has been cancelled successfully. The student has been notified.');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Illuminate\Support\Facades\Log::error('Error cancelling session: ' . $e->getMessage());
+            return redirect()->route('teacher.sessions')
+                             ->with('error', 'Error cancelling session: ' . $e->getMessage());
         }
     }
 
@@ -751,7 +839,7 @@ class TeacherController extends Controller
                              ->with('error', 'You are not authorized to view this session.');
         }
 
-        $session->load(['student', 'payment']);
+        $session->load(['student', 'payment', 'homework']);
 
         return view('teacher.session-details', compact('session'));
     }

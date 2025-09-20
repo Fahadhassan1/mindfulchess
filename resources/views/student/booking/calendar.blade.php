@@ -27,7 +27,7 @@
                         @endif
                         <div>
                             <h4 class="text-xl font-bold">{{ $teacher->name }}</h4>
-                            <p class="text-gray-600">{{ $teacher->email }}</p>
+                            {{-- <p class="text-gray-600">{{ $teacher->email }}</p> --}}
                         </div>
                     </div>
                 </div>
@@ -59,7 +59,7 @@
                                 </div>
                             </div>
                             @endif
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Duration</label>
                                     <select name="duration" id="duration" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -68,13 +68,16 @@
                                         <option value="60" selected>60 minutes - £{{ number_format($sessionPrices['60']['price'], 2) }}</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
-                                    <select name="session_type" id="session_type" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <option value="adult">Adult</option>
-                                        <option value="kids">Kids</option>
-                                    </select>
-                                </div>
+                            </div>
+                            
+                            <!-- Session Type (automatically determined based on stored preference) -->
+                            <input type="hidden" name="session_type" id="session_type" value="{{ auth()->user()->studentProfile->session_type_preference}}">
+                            <div class="mt-2 p-3 bg-blue-50 rounded-md">
+                                <p class="text-sm text-blue-700">
+                                    <strong>Session Type:</strong> 
+                                    <span id="session_type_display">{{ auth()->user()->studentProfile->session_type_preference }}</span>
+                                    (based on your preference)
+                                </p>
                             </div>
                         </div>
 
@@ -139,7 +142,7 @@
                                     <!-- Time Slots -->
                                     <div>
                                         <h4 class="font-medium mb-3">Available Times</h4>
-                                        <div id="time-slots" class="space-y-2">
+                                        <div id="time-slots" class="space-y-2 max-h-80 overflow-y-auto border border-gray-200 rounded-lg p-3">
                                             <p class="text-gray-500 text-sm">Please select a date first</p>
                                         </div>
                                     </div>
@@ -210,18 +213,76 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const availabilityData = JSON.parse(document.getElementById('availability-data').textContent);
+            let availabilityData = JSON.parse(document.getElementById('availability-data').textContent);
             const form = document.getElementById('booking-form');
             const bookBtn = document.getElementById('book-session-btn');
             const bookBtnText = document.getElementById('book-btn-text');
             const bookBtnSpinner = document.getElementById('book-btn-spinner');
             const sessionSummary = document.getElementById('session-summary');
+            const durationSelect = document.getElementById('duration');
             
             let selectedDate = null;
             let selectedTime = null;
 
             // Session pricing
             const sessionPrices = @json($sessionPrices);
+
+            // Duration change handler - reload availability when duration changes
+            durationSelect.addEventListener('change', function() {
+                const duration = this.value;
+                
+                // Reset selections
+                selectedDate = null;
+                selectedTime = null;
+                updateSessionSummary();
+                
+                // Reset visual selections
+                document.querySelectorAll('.date-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white');
+                    if (!btn.disabled) {
+                        btn.classList.add('bg-blue-100', 'text-blue-800');
+                    }
+                });
+                
+                // Clear time slots
+                document.getElementById('time-slots').innerHTML = '<p class="text-gray-500 text-sm">Please select a date first</p>';
+                
+                // Fetch new availability for selected duration
+                fetch('{{ route("student.booking.availability") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ duration: parseInt(duration) })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    availabilityData = data.availability;
+                    updateCalendarDates();
+                })
+                .catch(error => {
+                    console.error('Error fetching availability:', error);
+                });
+            });
+
+            // Function to update calendar dates based on new availability data
+            function updateCalendarDates() {
+                document.querySelectorAll('.date-btn').forEach(btn => {
+                    const date = btn.dataset.date;
+                    const hasAvailability = availabilityData.hasOwnProperty(date) && availabilityData[date].length > 0;
+                    
+                    if (hasAvailability) {
+                        btn.disabled = false;
+                        btn.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+                        btn.classList.add('bg-blue-100', 'hover:bg-blue-200', 'text-blue-800', 'cursor-pointer');
+                    } else {
+                        btn.disabled = true;
+                        btn.classList.remove('bg-blue-100', 'hover:bg-blue-200', 'text-blue-800', 'cursor-pointer', 'bg-blue-600', 'text-white');
+                        btn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+                    }
+                });
+            }
 
             // Date selection
             document.querySelectorAll('.date-btn').forEach(btn => {
@@ -263,7 +324,7 @@
                                 class="time-slot-btn w-full p-3 text-left border border-gray-300 rounded hover:bg-blue-50 hover:border-blue-300 transition duration-200"
                                 data-time="${slot.start_time.substring(0, 5)}">
                             <div class="font-medium">${slot.formatted_start} - ${slot.formatted_end}</div>
-                            <div class="text-sm text-gray-500">${dayOfWeek}</div>
+                            <div class="text-sm text-gray-500">${dayOfWeek} • ${slot.duration} minutes</div>
                         </button>
                     `;
                 }).join('');
@@ -307,9 +368,6 @@
                     bookBtn.disabled = true;
                 }
             }
-
-            // Duration change handler
-            document.getElementById('duration').addEventListener('change', updateSessionSummary);
 
             // Form submission
             form.addEventListener('submit', function(e) {
@@ -373,5 +431,33 @@
             background-color: #eff6ff;
             border-color: #93c5fd;
         }
+        
+        /* Custom scrollbar styling for time slots */
+        #time-slots {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+        
+        #time-slots::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #time-slots::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        
+        #time-slots::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        #time-slots::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        #time-slots {
+            max-height: 500px !important;
+        }
+
     </style>
 </x-app-layout>

@@ -28,7 +28,10 @@ class ChessSession extends Model
         'admin_notes',
         'session_type',
         'session_name',
-        'suggested_availability'
+        'meeting_link',
+        'suggested_availability',
+        'cancelled_at',
+        'cancellation_reason'
     ];
     
     /**
@@ -39,6 +42,7 @@ class ChessSession extends Model
     protected $casts = [
         'scheduled_at' => 'datetime',
         'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'amount' => 'decimal:2',
         'is_paid' => 'boolean',
         'suggested_availability' => 'array',

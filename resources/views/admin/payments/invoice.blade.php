@@ -28,7 +28,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            background: linear-gradient(135deg, #532563 0%, #532563 100%);
             color: white;
             padding: 30px;
             text-align: center;
@@ -64,7 +64,7 @@
         
         .company-info h3,
         .customer-info h3 {
-            color: #dc3545;
+            color: #532563;
             margin-bottom: 15px;
             font-size: 1.2rem;
         }
@@ -113,8 +113,8 @@
         }
         
         .status-failed {
-            background: #f8d7da;
-            color: #721c24;
+            background: #532563;
+            color: #532563;
         }
         
         .invoice-table {
@@ -124,7 +124,7 @@
         }
         
         .invoice-table th {
-            background: #dc3545;
+            background: #532563;
             color: white;
             padding: 15px;
             text-align: left;
@@ -160,12 +160,12 @@
         }
         
         .total-row.final {
-            border-top: 2px solid #dc3545;
+            border-top: 2px solid #532563;
             margin-top: 15px;
             padding-top: 15px;
             font-size: 1.3rem;
             font-weight: 700;
-            color: #dc3545;
+            color: #532563;
         }
         
         .discount-info {
@@ -187,15 +187,15 @@
         }
         
         .session-details {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
+            background: #532563;
+            border: 1px solid #532563;
             border-radius: 6px;
             padding: 20px;
             margin: 20px 30px;
         }
         
         .session-details h4 {
-            color: #856404;
+            color: white;
             margin-bottom: 15px;
             font-size: 1.1rem;
         }
@@ -207,12 +207,12 @@
         }
         
         .session-details p {
-            color: #856404;
+            color: white;
             margin-bottom: 8px;
         }
         
         .session-details strong {
-            color: #721c24;
+            color: white;
         }
         
         .admin-info {
@@ -269,7 +269,7 @@
         }
         
         .btn-primary {
-            background: #dc3545;
+            background: #532563;
             color: white;
         }
         
@@ -349,8 +349,8 @@
                 <h3>From:</h3>
                 <p><strong>Mindful Chess</strong></p>
                 <p>Online Chess Learning Platform</p>
-                <p>Email: support@mindfulchess.com</p>
-                <p>Website: www.mindfulchess.com</p>
+                <p>Email: teaching@mindfulchess.co.uk</p>
+                <p>Website: www.mindfulchess.org </p>
             </div>
             <div class="customer-info">
                 <h3>To:</h3>
@@ -380,7 +380,12 @@
                 <div class="meta-item">
                     <strong>Status:</strong>
                     <span class="status-badge status-{{ $payment->status }}">
-                        {{ ucfirst($payment->status) }}
+                        @if($payment->status === 'succeeded')
+                            {{ ucfirst('Completed') }}
+                        @else
+                            {{ ucfirst($payment->status) }}
+                        @endif
+
                     </span>
                 </div>
             </div>

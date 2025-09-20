@@ -64,6 +64,11 @@ class SessionAssigned extends Notification implements ShouldQueue
             $message->line('- Scheduled Time: ' . $this->session->scheduled_at->format('l, F j, Y \a\t g:i A'));
         }
         
+        // Add meeting link if available
+        if ($this->session->meeting_link) {
+            $message->line('- Meeting Link: ' . $this->session->meeting_link);
+        }
+        
         $message->action('View Session Details', $teacherProfileUrl)
             ->line('Please log in to your student portal to see all details and communicate with your teacher.');
 

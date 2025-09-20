@@ -130,6 +130,7 @@ Route::middleware(['auth', 'role:teacher|admin'])->prefix('teacher')->name('teac
     Route::get('/sessions', [App\Http\Controllers\TeacherController::class, 'sessions'])->name('sessions');
     Route::post('/sessions/{session}/confirm', [App\Http\Controllers\TeacherController::class, 'confirmSession'])->name('sessions.confirm');
     Route::post('/sessions/{session}/complete', [App\Http\Controllers\TeacherController::class, 'completeSession'])->name('sessions.complete');
+    Route::post('/sessions/{session}/cancel', [App\Http\Controllers\TeacherController::class, 'cancelSession'])->name('sessions.cancel');
     Route::get('/sessions/{session}', [App\Http\Controllers\TeacherController::class, 'showSession'])->name('sessions.show');
     Route::put('/sessions/{session}/notes', [App\Http\Controllers\TeacherController::class, 'updateSessionNotes'])->name('sessions.update-notes');
     Route::get('/sessions/{session}/assign-homework', [App\Http\Controllers\TeacherController::class, 'showAssignHomework'])->name('sessions.assign-homework');
@@ -139,41 +140,11 @@ Route::middleware(['auth', 'role:teacher|admin'])->prefix('teacher')->name('teac
     
     // Teacher booking routes (for booking sessions for their students)
     Route::get('/booking/{student}/calendar', [App\Http\Controllers\TeacherBookingController::class, 'showCalendar'])->name('booking.calendar');
+    Route::post('/booking/{student}/availability', [App\Http\Controllers\TeacherBookingController::class, 'getAvailabilityForDuration'])->name('booking.availability');
     Route::post('/booking/{student}/process', [App\Http\Controllers\TeacherBookingController::class, 'processBooking'])->name('booking.process');
     Route::get('/booking/{student}/payment', [App\Http\Controllers\TeacherBookingController::class, 'showPayment'])->name('booking.payment');
     Route::post('/booking/{student}/payment/process', [App\Http\Controllers\TeacherBookingController::class, 'processPayment'])->name('booking.payment.process');
-    
-    // Debug route to check premium pricing
-    Route::get('/booking/{student}/debug', function($studentId) {
-        $teacher = auth()->user();
-        $student = \App\Models\User::with(['studentProfile'])->find($studentId);
-        $teacher = \App\Models\User::with(['teacherProfile'])->find($teacher->id);
-        
-        $sessionCount = \App\Models\ChessSession::where('student_id', $student->id)
-                                              ->where('teacher_id', $teacher->id)
-                                              ->count();
-        
-        return response()->json([
-            'student_id' => $student->id,
-            'student_name' => $student->name,
-            'teacher_id' => $teacher->id,
-            'teacher_name' => $teacher->name,
-            'teacher_has_profile' => $teacher->teacherProfile ? true : false,
-            'is_high_level' => $teacher->teacherProfile ? $teacher->teacherProfile->is_high_level : null,
-            'session_count' => $sessionCount,
-            'should_use_premium' => $sessionCount >= 10 && $teacher->teacherProfile && $teacher->teacherProfile->is_high_level == 1,
-            'standard_rates' => [
-                '30' => 25.00,
-                '45' => 35.00,
-                '60' => 45.00
-            ],
-            'premium_rates' => [
-                '30' => 27.50,
-                '45' => 38.75,
-                '60' => 50.00
-            ]
-        ]);
-    })->name('booking.debug');
+
 });
 
 // Student routes
@@ -189,6 +160,7 @@ Route::middleware(['auth', 'role:student|teacher|admin'])->prefix('student')->na
     
     // Additional booking routes
     Route::get('/booking/calendar', [App\Http\Controllers\StudentBookingController::class, 'showCalendar'])->name('booking.calendar');
+    Route::post('/booking/availability', [App\Http\Controllers\StudentBookingController::class, 'getAvailabilityForDuration'])->name('booking.availability');
     Route::post('/booking/process', [App\Http\Controllers\StudentBookingController::class, 'processBooking'])->name('booking.process');
     Route::get('/booking/payment', [App\Http\Controllers\StudentBookingController::class, 'showPayment'])->name('booking.payment');
     Route::post('/booking/payment/process', [App\Http\Controllers\StudentBookingController::class, 'processPayment'])->name('booking.payment.process');
@@ -202,6 +174,7 @@ Route::middleware(['auth', 'role:student|teacher|admin'])->prefix('student')->na
     Route::get('/homework/{homework}', [App\Http\Controllers\StudentController::class, 'showHomework'])->name('homework.show');
     Route::get('/homework/{homework}/download', [App\Http\Controllers\StudentController::class, 'downloadHomework'])->name('homework.download');
     Route::put('/homework/{homework}/status', [App\Http\Controllers\StudentController::class, 'updateHomeworkStatus'])->name('homework.update-status');
+    Route::put('/homework/{homework}/feedback', [App\Http\Controllers\StudentController::class, 'submitHomeworkFeedback'])->name('homework.submit-feedback');
 });
 
 // Public rate rejection route (no authentication required)

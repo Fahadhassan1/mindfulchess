@@ -183,7 +183,16 @@
                                                 @if($session->scheduled_at)
                                                     <div class="text-sm text-gray-900">
                                                         <div class="font-medium">{{ $session->scheduled_at->format('M d, Y') }}</div>
-                                                        <div class="text-gray-500">{{ $session->scheduled_at->format('g:i A') }}</div>
+                                                        <div class="text-gray-500 flex items-center">
+                                                            {{ $session->scheduled_at->format('g:i A') }}
+                                                            @if($session->meeting_link)
+                                                                <a href="{{ $session->meeting_link }}" target="_blank">
+                                                                    <svg class="ml-2 h-4 w-4 text-blue-500" title="Meeting link available" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                                                    </svg>
+                                                                </a>
+                                                            @endif
+                                                        </div>
                                                     </div>
                                                 @else
                                                     <span class="text-sm text-gray-500">Not scheduled</span>
@@ -212,7 +221,8 @@
                                             <div class="text-xs text-green-600">
                                                 £{{ number_format($session->transfer->amount, 2) }}
                                             </div>
-                                        @elseif($session->status === 'completed' && $session->payment->status === 'paid')
+
+                                        @elseif(($session->status === 'completed' || $session->status === 'booked') && ($session->payment->status === 'succeeded'))
                                             <div class="text-xs text-yellow-600">Paid</div>
                                         @else
                                             <div class="text-xs text-gray-500">Not Paid</div>
@@ -254,6 +264,19 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                 </svg>
                                                 Get Paid
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    {{-- Cancel button for unpaid sessions --}}
+                                    @if(in_array($session->status, ['booked', 'pending']) && !$session->is_paid && !$session->payment_id)
+                                        <form method="POST" action="{{ route('teacher.sessions.cancel', $session) }}" class="inline">
+                                            @csrf
+                                            <button type="submit" class="inline-flex items-center px-3 py-1 border border-red-300 rounded text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800 transition-colors duration-200" title="Cancel Session" onclick="return confirm('Are you sure you want to cancel this session?\n\nThis action will:\n• Cancel the session\n• Notify the student\n• Free up the time slot\n\nThis cannot be undone.')">
+                                                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                                Cancel
                                             </button>
                                         </form>
                                     @endif                                                    <a href="{{ route('teacher.sessions.show', $session) }}" class="text-gray-600 hover:text-gray-900" title="View Details">

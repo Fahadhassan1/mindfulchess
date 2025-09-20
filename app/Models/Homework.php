@@ -25,6 +25,8 @@ class Homework extends Model
         'status',
         'completed_at',
         'submitted_at',
+        'student_feedback',
+        'feedback_submitted_at',
     ];
 
     /**
@@ -35,6 +37,7 @@ class Homework extends Model
     protected $casts = [
         'completed_at' => 'datetime',
         'submitted_at' => 'datetime',
+        'feedback_submitted_at' => 'datetime',
     ];
 
     /**
