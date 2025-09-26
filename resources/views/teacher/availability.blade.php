@@ -39,6 +39,8 @@
                                     <option value="sunday" {{ old('day_of_week') == 'sunday' ? 'selected' : '' }}>Sunday</option>
                                 </select>
                                 <x-input-error class="mt-2" :messages="$errors->get('day_of_week')" />
+                                <p class="mt-1 text-sm text-gray-500">Available times: 6:00 AM - 11:00 PM</p>
+
                             </div>
 
                             <!-- Start Time -->
@@ -47,7 +49,7 @@
                                 <select id="start_time" name="start_time" 
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                     <option value="">Select start time</option>
-                                    @for ($hour = 0; $hour < 24; $hour++)
+                                    @for ($hour = 6; $hour <= 22; $hour++)
                                         @foreach ([0, 15, 30, 45] as $minute)
                                             @php
                                                 $timeValue = sprintf('%02d:%02d', $hour, $minute);
@@ -68,7 +70,7 @@
                                 <select id="end_time" name="end_time" 
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                     <option value="">Select end time</option>
-                                    @for ($hour = 0; $hour < 24; $hour++)
+                                    @for ($hour = 6; $hour <= 23; $hour++)
                                         @foreach ([0, 15, 30, 45] as $minute)
                                             @php
                                                 $timeValue = sprintf('%02d:%02d', $hour, $minute);

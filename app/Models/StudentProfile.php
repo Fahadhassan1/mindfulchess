@@ -19,6 +19,7 @@ class StudentProfile extends Model
         'age',
         'level',
         'chess_rating',
+        'chess_username',
         'parent_name',
         'parent_email',
         'parent_phone',

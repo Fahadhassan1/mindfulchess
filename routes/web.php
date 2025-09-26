@@ -22,6 +22,10 @@ Route::get('/', function () {
 // Checkout routes
 Route::get('/checkout', [App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout');
 Route::post('/checkout/process', [App\Http\Controllers\CheckoutController::class, 'processPayment'])->name('checkout.process');
+// Handle GET requests to checkout/process (redirect to home)
+Route::get('/checkout/process', function() {
+    return redirect('/checkout')->with('error', 'Invalid access. Please start the checkout process again.');
+});
 Route::get('/checkout/success', [App\Http\Controllers\CheckoutController::class, 'success'])->name('checkout.success');
 Route::post('/coupon/validate', [App\Http\Controllers\CouponController::class, 'validateCoupon'])->name('coupon.validate');
 
@@ -197,3 +201,8 @@ Route::middleware('auth')->group(function () {
 
 
 require __DIR__.'/auth.php';
+
+// Fallback route for any unmatched routes - redirect to home
+Route::fallback(function () {
+    return redirect('/')->with('error', 'Page not found. You have been redirected to the home page.');
+});

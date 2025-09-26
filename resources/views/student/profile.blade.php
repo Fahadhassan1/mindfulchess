@@ -120,6 +120,32 @@
                                     @enderror
                                 </div>
                                 @endif
+
+                                <!-- Chess Account Details (only for adults) -->
+                                @if($profile && $profile->session_type_preference === 'adult')
+                                <div class="mb-6">
+                                    <h3 class="font-bold text-gray-700 mb-3">Chess Account Details</h3>
+                                    <p class="text-gray-600 text-sm mb-4">If you have an existing chess account on platforms  Chess.com , please share your details below. This helps your teacher understand your current level and review your games.</p>
+
+
+                                    <div class="mb-4">
+                                        <label class="block text-gray-700 text-sm font-bold mb-2" for="chess_username">
+                                            Username on Chess.com
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            name="chess_username" 
+                                            id="chess_username" 
+                                            value="{{ old('chess_username', $profile->chess_username ?? '') }}" 
+                                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                            placeholder="e.g., jakechessaccount"
+                                        >
+                                        @error('chess_username')
+                                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                                @endif
                             </div>
 
                             <div>
@@ -207,4 +233,30 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Show/hide chess username field based on platform selection
+        document.addEventListener('DOMContentLoaded', function() {
+            const platformSelect = document.getElementById('chess_platform');
+            const usernameDiv = document.getElementById('chess_username')?.parentElement;
+            
+            if (platformSelect && usernameDiv) {
+                function toggleUsernameField() {
+                    const selectedPlatform = platformSelect.value;
+                    if (selectedPlatform && selectedPlatform !== '') {
+                        usernameDiv.style.display = 'block';
+                    } else {
+                        usernameDiv.style.display = 'none';
+                        document.getElementById('chess_username').value = '';
+                    }
+                }
+                
+                // Initial check
+                toggleUsernameField();
+                
+                // Listen for changes
+                platformSelect.addEventListener('change', toggleUsernameField);
+            }
+        });
+    </script>
 </x-app-layout>

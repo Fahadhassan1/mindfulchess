@@ -763,7 +763,7 @@
             }
         }
         
-        /* Time Slots Styling */
+        /* Time Range Selection Styling */
         .preferred-date-option {
             background-color: #f9fafb;
             padding: 15px;
@@ -772,38 +772,60 @@
             border: 1px solid #e5e7eb;
         }
         
-        .time-slots-grid {
+        .time-ranges-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
             margin-top: 15px;
         }
         
-        .time-slot {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            text-align: center;
+        .time-range-option {
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-size: 0.9rem;
+            text-align: center;
         }
         
-        .time-slot:hover {
+        .time-range-option:hover {
             border-color: #000;
-            background-color: #f5f5f5;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
-        .time-slot.selected {
+        .time-range-option.selected {
+            border-color: #000;
             background-color: #000;
             color: white;
-            border-color: #000;
         }
         
-        .time-slot.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background-color: #f5f5f5;
+        .time-range-option.custom-range.selected {
+            border-color: #007bff;
+            background-color: #007bff;
+        }
+        
+        .range-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        
+        .range-time {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        
+        .time-range-option.selected .range-time {
+            opacity: 1;
+        }
+        
+        .custom-time-inputs {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
         }
         
         .mb-3 {
@@ -890,11 +912,11 @@
                         </div>
                     </section>
                     <div style="margin-bottom: 2rem;">
-                         <h1 class="section-title">Choose Your Session times</h1>
+                         <h1 class="section-title">Preferred Session Times</h1>
                         <!-- Section for Calendar Availability -->
                         <div class="form-group" style="margin-top: 2rem;">
                             <label class="form-label">Preferred Session Times *</label>
-                            <p class="text-sm text-gray-600 mb-3">Please select dates and time slots when you would be available for your lesson. You can select multiple slots.</p>
+                            <p class="text-sm text-gray-600 mb-3">Please select dates and time ranges when you would be available for your lesson. You can select multiple date/time combinations.</p>
                             
                             <div id="preferred-dates-container">
                                 <div class="preferred-date-option">
@@ -903,9 +925,47 @@
                                         <input type="date" class="form-control preferred-date" required>
                                     </div>
                                     
-                                    <div class="form-group">
-                                        <label class="form-label">Available Time Slots (select multiple)</label>
-                                        <div class="time-slots-grid" id="time-slots-container-0"></div>
+                                    <div class="form-group time-ranges-section" style="display: none;">
+                                        <label class="form-label">Available Time Ranges (select one or more)</label>
+                                        <div class="time-ranges-grid">
+                                            <div class="time-range-option" data-from="08:00" data-to="12:00">
+                                                <div class="range-label">Morning</div>
+                                                <div class="range-time">8:00 AM - 12:00 PM</div>
+                                            </div>
+                                            <div class="time-range-option" data-from="12:00" data-to="16:00">
+                                                <div class="range-label">Afternoon</div>
+                                                <div class="range-time">12:00 PM - 4:00 PM</div>
+                                            </div>
+                                            <div class="time-range-option" data-from="16:00" data-to="20:00">
+                                                <div class="range-label">Evening</div>
+                                                <div class="range-time">4:00 PM - 8:00 PM</div>
+                                            </div>
+                                            <div class="time-range-option" data-from="08:00" data-to="16:00">
+                                                <div class="range-label">Full Day</div>
+                                                <div class="range-time">8:00 AM - 4:00 PM</div>
+                                            </div>
+                                            <div class="time-range-option" data-from="12:00" data-to="20:00">
+                                                <div class="range-label">Afternoon/Evening</div>
+                                                <div class="range-time">12:00 PM - 8:00 PM</div>
+                                            </div>
+                                            <div class="time-range-option custom-range" data-custom="true">
+                                                <div class="range-label">Custom Range</div>
+                                                <div class="range-time">Choose your own times</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="custom-time-inputs" style="display: none; margin-top: 1rem;">
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                                <div>
+                                                    <label class="form-label" style="font-size: 0.8rem;">From</label>
+                                                    <input type="time" class="form-control time-from" min="08:00" max="20:00">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label" style="font-size: 0.8rem;">To</label>
+                                                    <input type="time" class="form-control time-to" min="08:00" max="20:00">
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     
                                     <button type="button" class="remove-date-option btn btn-outline-danger mb-3" style="display:none;">Remove Date</button>
@@ -1120,23 +1180,32 @@
                         return;
                     }
                     
-                    // Check if any date option has a date but no time slots selected
+                    // Check if any date option has a date but no time range selected
                     const dateOptions = document.querySelectorAll('.preferred-date-option');
                     let hasIncompleteOption = false;
                     
-                    dateOptions.forEach((option, index) => {
+                    dateOptions.forEach((option) => {
                         const date = option.querySelector('.preferred-date').value;
                         if (date) {
-                            const timeSlotContainer = document.getElementById(`time-slots-container-${index}`);
-                            const selectedSlots = timeSlotContainer.querySelectorAll('.time-slot.selected');
-                            if (selectedSlots.length === 0) {
+                            const selectedRanges = option.querySelectorAll('.time-range-option.selected');
+                            if (selectedRanges.length === 0) {
                                 hasIncompleteOption = true;
+                            } else {
+                                // Check if custom range is selected but not properly filled
+                                const customRange = option.querySelector('.time-range-option.custom-range.selected');
+                                if (customRange) {
+                                    const timeFrom = option.querySelector('.time-from').value;
+                                    const timeTo = option.querySelector('.time-to').value;
+                                    if (!timeFrom || !timeTo) {
+                                        hasIncompleteOption = true;
+                                    }
+                                }
                             }
                         }
                     });
                     
                     if (hasIncompleteOption) {
-                        alert('Please select at least one time slot for each date, or remove dates without selections.');
+                        alert('Please select at least one time range for each date, or remove dates without complete selections.');
                         return;
                     }
                 } catch (e) {
@@ -1283,7 +1352,7 @@
                 });
             }
             
-            // Multiple date options with time slots functionality
+            // Multiple date options with time range functionality
             document.addEventListener('DOMContentLoaded', function() {
                 const container = document.getElementById('preferred-dates-container');
                 const addDateOptionBtn = document.getElementById('add-date-option');
@@ -1312,97 +1381,109 @@
                 const initialDateInput = document.querySelector('.preferred-date');
                 setDateConstraints(initialDateInput);
                 
-                // Function to generate time slots
-                function generateTimeSlots(containerId) {
-                    const container = document.getElementById(containerId);
-                    container.innerHTML = ''; // Clear previous slots
-                    
-                    // Generate time slots from 8am to 8pm in 15-minute increments
-                    for (let hour = 8; hour <= 20; hour++) {
-                        for (let minute = 0; minute < 60; minute += 15) {
-                            // Don't create 8:15pm, 8:30pm, or 8:45pm slots
-                            if (hour === 20 && minute > 0) continue;
-                            
-                            const formattedHour = hour.toString().padStart(2, '0');
-                            const formattedMinute = minute.toString().padStart(2, '0');
-                            const timeValue = `${formattedHour}:${formattedMinute}`;
-                            
-                            // Format for display (12-hour format)
-                            let displayHour = hour > 12 ? hour - 12 : hour;
-                            const ampm = hour >= 12 ? 'PM' : 'AM';
-                            displayHour = displayHour === 0 ? 12 : displayHour; // Handle midnight
-                            const displayTime = `${displayHour}:${formattedMinute} ${ampm}`;
-                            
-                            // Create the time slot element
-                            const slot = document.createElement('div');
-                            slot.className = 'time-slot';
-                            slot.textContent = displayTime;
-                            slot.dataset.value = timeValue;
-                            slot.dataset.containerId = containerId;
-                            
-                            slot.addEventListener('click', function() {
-                                // Toggle selected class
-                                this.classList.toggle('selected');
-                                
-                                // Update hidden input
-                                updatePreferredTimesInput();
-                            });
-                            
-                            container.appendChild(slot);
-                        }
-                    }
-                }
-                
-                // Setup date change event to update hidden input and generate time slots
-                function setupDateChangeEvent(dateOption, index) {
+                // Function to setup time range selection for a date option
+                function setupTimeRangeSelection(dateOption) {
                     const dateInput = dateOption.querySelector('.preferred-date');
-                    const containerId = `time-slots-container-${index}`;
+                    const timeRangesSection = dateOption.querySelector('.time-ranges-section');
+                    const timeRangeOptions = dateOption.querySelectorAll('.time-range-option');
+                    const customTimeInputs = dateOption.querySelector('.custom-time-inputs');
+                    const timeFromInput = dateOption.querySelector('.time-from');
+                    const timeToInput = dateOption.querySelector('.time-to');
                     
-                    // Initial state - hide the time slots until a date is selected
-                    const timeSlotContainer = document.getElementById(containerId);
-                    if (!dateInput.value) {
-                        timeSlotContainer.parentElement.style.display = 'none';
-                    }
-                    
+                    // Show/hide time ranges when date is selected
                     dateInput.addEventListener('change', function() {
                         if (this.value) {
-                            // Show the time slots container
-                            timeSlotContainer.parentElement.style.display = 'block';
-                            // Generate time slots when a date is selected
-                            generateTimeSlots(containerId);
+                            timeRangesSection.style.display = 'block';
                         } else {
-                            // Hide time slots if date is cleared
-                            timeSlotContainer.parentElement.style.display = 'none';
+                            timeRangesSection.style.display = 'none';
+                            // Clear all selections
+                            timeRangeOptions.forEach(option => option.classList.remove('selected'));
+                            customTimeInputs.style.display = 'none';
+                            timeFromInput.value = '';
+                            timeToInput.value = '';
                         }
                         updatePreferredTimesInput();
                     });
+                    
+                    // Handle time range option selection
+                    timeRangeOptions.forEach(option => {
+                        option.addEventListener('click', function() {
+                            // Toggle selection
+                            this.classList.toggle('selected');
+                            
+                            // Handle custom range option
+                            if (this.dataset.custom === 'true') {
+                                if (this.classList.contains('selected')) {
+                                    customTimeInputs.style.display = 'block';
+                                } else {
+                                    customTimeInputs.style.display = 'none';
+                                    timeFromInput.value = '';
+                                    timeToInput.value = '';
+                                }
+                            }
+                            
+                            updatePreferredTimesInput();
+                        });
+                    });
+                    
+                    // Handle custom time inputs
+                    if (timeFromInput && timeToInput) {
+                        timeFromInput.addEventListener('change', updatePreferredTimesInput);
+                        timeToInput.addEventListener('change', function() {
+                            // Validate that end time is after start time
+                            if (timeFromInput.value && this.value) {
+                                const fromTime = new Date(`2000-01-01T${timeFromInput.value}`);
+                                const toTime = new Date(`2000-01-01T${this.value}`);
+                                
+                                if (fromTime >= toTime) {
+                                    alert('End time must be later than start time');
+                                    this.value = '';
+                                    return;
+                                }
+                            }
+                            updatePreferredTimesInput();
+                        });
+                    }
                 }
                 
-                // Setup initial date change event
-                setupDateChangeEvent(document.querySelector('.preferred-date-option'), 0);
-                
-                // Setup initial date change event
-                setupDateChangeEvent(document.querySelector('.preferred-date-option'), 0);
+                // Setup initial time range selection
+                setupTimeRangeSelection(document.querySelector('.preferred-date-option'));
                 
                 // Function to update hidden input with all preferred times
                 function updatePreferredTimesInput() {
                     const dateOptions = document.querySelectorAll('.preferred-date-option');
                     const preferredTimes = [];
                     
-                    dateOptions.forEach((dateOption, index) => {
+                    dateOptions.forEach((dateOption) => {
                         const date = dateOption.querySelector('.preferred-date').value;
                         if (!date) return;
                         
-                        const timeSlotContainer = document.getElementById(`time-slots-container-${index}`);
-                        const selectedSlots = timeSlotContainer.querySelectorAll('.time-slot.selected');
+                        const selectedRanges = dateOption.querySelectorAll('.time-range-option.selected');
                         
-                        if (selectedSlots.length > 0) {
-                            const times = Array.from(selectedSlots).map(slot => slot.dataset.value);
-                            preferredTimes.push({
-                                date: date,
-                                times: times
-                            });
-                        }
+                        selectedRanges.forEach(range => {
+                            if (range.dataset.custom === 'true') {
+                                // Handle custom range
+                                const timeFrom = dateOption.querySelector('.time-from').value;
+                                const timeTo = dateOption.querySelector('.time-to').value;
+                                
+                                if (timeFrom && timeTo) {
+                                    preferredTimes.push({
+                                        date: date,
+                                        time_from: timeFrom,
+                                        time_to: timeTo,
+                                        label: 'Custom Range'
+                                    });
+                                }
+                            } else {
+                                // Handle preset ranges
+                                preferredTimes.push({
+                                    date: date,
+                                    time_from: range.dataset.from,
+                                    time_to: range.dataset.to,
+                                    label: range.querySelector('.range-label').textContent
+                                });
+                            }
+                        });
                     });
                     
                     preferredTimesInput.value = JSON.stringify(preferredTimes);
@@ -1418,11 +1499,15 @@
                     
                     // Reset values in the clone
                     newOption.querySelector('.preferred-date').value = '';
+                    newOption.querySelector('.time-ranges-section').style.display = 'none';
+                    newOption.querySelector('.custom-time-inputs').style.display = 'none';
+                    newOption.querySelector('.time-from').value = '';
+                    newOption.querySelector('.time-to').value = '';
                     
-                    // Update the time-slots-container id
-                    const newTimeSlotContainer = newOption.querySelector('.time-slots-grid');
-                    newTimeSlotContainer.id = `time-slots-container-${dateOptionCounter}`;
-                    newTimeSlotContainer.innerHTML = ''; // Clear any existing slots
+                    // Clear all selections
+                    newOption.querySelectorAll('.time-range-option').forEach(option => {
+                        option.classList.remove('selected');
+                    });
                     
                     // Show the remove button
                     newOption.querySelector('.remove-date-option').style.display = 'block';
@@ -1433,11 +1518,8 @@
                     // Set date constraints for the new option
                     setDateConstraints(newOption.querySelector('.preferred-date'));
                     
-                    // Hide the time slots container until a date is selected
-                    newTimeSlotContainer.parentElement.style.display = 'none';
-                    
-                    // Setup date change event (which will generate time slots when a date is selected)
-                    setupDateChangeEvent(newOption, dateOptionCounter);
+                    // Setup time range selection for new option
+                    setupTimeRangeSelection(newOption);
                     
                     // Add click event for remove button
                     newOption.querySelector('.remove-date-option').addEventListener('click', function() {
@@ -1447,5 +1529,5 @@
                 });
             });
         </script>
-</script>
+</body>
 </html>

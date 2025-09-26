@@ -88,6 +88,7 @@ class StudentController extends Controller
         // Add conditional validation rules based on user type
         if ($isAdult) {
             $validationRules['chess_rating'] = 'nullable|string|max:255';
+            $validationRules['chess_username'] = 'nullable|string|max:255';
         } else {
             $validationRules['age'] = 'nullable|integer|min:5|max:17';
             $validationRules['level'] = 'nullable|string|max:255';

@@ -52,6 +52,7 @@ class SessionAssignmentController extends Controller
         
         // Get all active teachers who match the session type
         $teachers = User::role('teacher')
+            ->with(['teacherProfile', 'availability'])
             ->whereHas('teacherProfile', function ($query) use ($session) {
                 $query->where('is_active', true);
             })
@@ -65,15 +66,41 @@ class SessionAssignmentController extends Controller
             return;
         }
         
-        // Send notifications to all eligible teachers
+        // Send notifications to eligible teachers based on their preferences
         foreach ($teachers as $teacher) {
+            // Skip if teacher has disabled session notifications completely
+            if (!$teacher->teacherProfile->receive_session_notifications) {
+                Log::info('Skipping teacher - notifications disabled', [
+                    'teacher_id' => $teacher->id,
+                    'session_id' => $session->id
+                ]);
+                continue;
+            }
+            
+            // Check teacher's notification preference
+            $notificationPreference = $teacher->teacherProfile->session_notification_preference ?? 'all';
+            
+            if ($notificationPreference === 'availability_match') {
+                // Only send notification if student's requested times match teacher's availability
+                if (!$this->doesStudentAvailabilityMatchTeacher($session, $teacher)) {
+                    Log::info('Skipping teacher - no availability match', [
+                        'teacher_id' => $teacher->id,
+                        'session_id' => $session->id,
+                        'preference' => $notificationPreference
+                    ]);
+                    continue;
+                }
+            }
+            
             try {
                 $teacher->notify(new SessionAssignmentRequest($session, $studentInfo));
                 
                 Log::info('Session assignment request sent to teacher', [
                     'teacher_id' => $teacher->id,
                     'teacher_email' => $teacher->email,
-                    'session_id' => $session->id
+                    'session_id' => $session->id,
+                    'preference' => $notificationPreference,
+                    'availability_checked' => $notificationPreference === 'availability_match'
                 ]);
             } catch (\Exception $e) {
                 Log::error('Failed to send session assignment request to teacher', [
@@ -129,14 +156,30 @@ class SessionAssignmentController extends Controller
         // Process the suggested availability from the session
         $suggestedAvailability = [];
         if ($session->suggested_availability) {
-            // Format the availability for the view
-            if (isset($session->suggested_availability['preferences'])) {
-                $suggestedAvailability = $session->suggested_availability['preferences'];
-            } else {
-                // Try to handle different formats of suggested availability
-                foreach ($session->suggested_availability as $item) {
-                    if (isset($item['date']) && isset($item['times'])) {
-                        $suggestedAvailability[] = $item;
+            // Convert availability ranges to specific time slots
+            $rawAvailability = $session->suggested_availability;
+            
+            // Handle different data formats
+            if (is_array($rawAvailability)) {
+                // First, merge overlapping time ranges for the same date
+                $mergedAvailability = $this->mergeOverlappingTimeRanges($rawAvailability);
+                
+                foreach ($mergedAvailability as $item) {
+                    if (isset($item['date']) && isset($item['time_from']) && isset($item['time_to'])) {
+                        // Convert time range to specific slots
+                        $timeSlots = $this->generateTimeSlots(
+                            $item['date'], 
+                            $item['time_from'], 
+                            $item['time_to'], 
+                            $session->duration
+                        );
+                        
+                        if (!empty($timeSlots)) {
+                            $suggestedAvailability[] = [
+                                'date' => $item['date'],
+                                'times' => $timeSlots
+                            ];
+                        }
                     }
                 }
             }
@@ -320,5 +363,227 @@ class SessionAssignmentController extends Controller
                 'message' => 'An error occurred while assigning the session. Please try again later.'
             ], 500);
         }
+    }
+    
+    /**
+     * Check if student's requested availability matches teacher's availability
+     */
+    private function doesStudentAvailabilityMatchTeacher(ChessSession $session, User $teacher)
+    {
+        // Get student's suggested availability
+        if (!$session->suggested_availability || !is_array($session->suggested_availability)) {
+            // If no student availability specified, consider it a match (fallback to old behavior)
+            return true;
+        }
+        
+        // Load teacher's availability
+        $teacher->load('availability');
+        if ($teacher->availability->isEmpty()) {
+            // If teacher has no availability set, consider it a match (they can work any time)
+            return true;
+        }
+        
+        // Merge overlapping student time ranges first
+        $mergedStudentAvailability = $this->mergeOverlappingTimeRanges($session->suggested_availability);
+        
+        foreach ($mergedStudentAvailability as $studentSlot) {
+            if (!isset($studentSlot['date']) || !isset($studentSlot['time_from']) || !isset($studentSlot['time_to'])) {
+                continue;
+            }
+            
+            $studentDate = \Carbon\Carbon::parse($studentSlot['date']);
+            $dayOfWeek = strtolower($studentDate->format('l'));
+            
+            // Check if teacher has availability on this day
+            $teacherDaySlots = $teacher->availability->where('day_of_week', $dayOfWeek)
+                                                    ->where('is_available', true);
+            
+            if ($teacherDaySlots->isEmpty()) {
+                continue; // Teacher not available on this day, check next student slot
+            }
+            
+            // Check if any teacher slot overlaps with student's time range
+            foreach ($teacherDaySlots as $teacherSlot) {
+                if ($this->timeRangesOverlap(
+                    $studentSlot['time_from'], 
+                    $studentSlot['time_to'],
+                    $teacherSlot->start_time,
+                    $teacherSlot->end_time
+                )) {
+                    // Found at least one matching time slot
+                    Log::info('Availability match found', [
+                        'teacher_id' => $teacher->id,
+                        'session_id' => $session->id,
+                        'student_date' => $studentSlot['date'],
+                        'student_time' => $studentSlot['time_from'] . '-' . $studentSlot['time_to'],
+                        'teacher_day' => $dayOfWeek,
+                        'teacher_time' => $teacherSlot->start_time . '-' . $teacherSlot->end_time
+                    ]);
+                    return true;
+                }
+            }
+        }
+        
+        Log::info('No availability match found', [
+            'teacher_id' => $teacher->id,
+            'session_id' => $session->id,
+            'student_slots_count' => count($mergedStudentAvailability),
+            'teacher_slots_count' => $teacher->availability->count()
+        ]);
+        
+        return false;
+    }
+
+    /**
+     * Merge overlapping time ranges for the same date
+     */
+    private function mergeOverlappingTimeRanges($availability)
+    {
+        if (!is_array($availability)) {
+            return $availability;
+        }
+        
+        // Group by date
+        $groupedByDate = [];
+        foreach ($availability as $item) {
+            if (isset($item['date']) && isset($item['time_from']) && isset($item['time_to'])) {
+                $date = $item['date'];
+                if (!isset($groupedByDate[$date])) {
+                    $groupedByDate[$date] = [];
+                }
+                $groupedByDate[$date][] = [
+                    'time_from' => $item['time_from'],
+                    'time_to' => $item['time_to'],
+                    'label' => $item['label'] ?? 'Time Range'
+                ];
+            }
+        }
+        
+        $mergedAvailability = [];
+        
+        foreach ($groupedByDate as $date => $timeRanges) {
+            // Sort time ranges by start time
+            usort($timeRanges, function($a, $b) {
+                return strcmp($a['time_from'], $b['time_from']);
+            });
+            
+            $merged = [];
+            $current = null;
+            
+            foreach ($timeRanges as $range) {
+                if ($current === null) {
+                    $current = $range;
+                } else {
+                    // Check if ranges overlap or are adjacent
+                    if ($this->timeRangesOverlap($current['time_from'], $current['time_to'], $range['time_from'], $range['time_to'])) {
+                        // Merge ranges
+                        $current['time_to'] = max($current['time_to'], $range['time_to']);
+                        $current['label'] = $this->combineLables($current['label'], $range['label']);
+                    } else {
+                        // No overlap, add current to merged and start new
+                        $merged[] = $current;
+                        $current = $range;
+                    }
+                }
+            }
+            
+            // Add the last range
+            if ($current !== null) {
+                $merged[] = $current;
+            }
+            
+            // Add merged ranges to final result
+            foreach ($merged as $mergedRange) {
+                $mergedAvailability[] = [
+                    'date' => $date,
+                    'time_from' => $mergedRange['time_from'],
+                    'time_to' => $mergedRange['time_to'],
+                    'label' => $mergedRange['label']
+                ];
+            }
+        }
+        
+        return $mergedAvailability;
+    }
+    
+    /**
+     * Check if two time ranges overlap or are adjacent
+     */
+    private function timeRangesOverlap($start1, $end1, $start2, $end2)
+    {
+        try {
+            // Helper function to parse time in either H:i or H:i:s format
+            $parseTime = function($time) {
+                // First try H:i:s format, then H:i format
+                try {
+                    return \Carbon\Carbon::createFromFormat('H:i:s', $time);
+                } catch (\Exception $e) {
+                    return \Carbon\Carbon::createFromFormat('H:i', $time);
+                }
+            };
+            
+            $s1 = $parseTime($start1);
+            $e1 = $parseTime($end1);
+            $s2 = $parseTime($start2);
+            $e2 = $parseTime($end2);
+            
+            // Check if ranges overlap or are adjacent (touching)
+            return $s1->lte($e2) && $s2->lte($e1);
+        } catch (\Exception $e) {
+            Log::error('Error checking time range overlap', [
+                'start1' => $start1, 'end1' => $end1,
+                'start2' => $start2, 'end2' => $end2,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+    
+    /**
+     * Combine labels from merged time ranges
+     */
+    private function combineLables($label1, $label2)
+    {
+        if ($label1 === $label2) {
+            return $label1;
+        }
+        
+        // Create a combined label
+        $labels = array_unique([$label1, $label2]);
+        return implode(' + ', $labels);
+    }
+    
+    /**
+     * Generate specific time slots from a time range based on session duration
+     */
+    private function generateTimeSlots($date, $timeFrom, $timeTo, $duration)
+    {
+        $slots = [];
+        
+        try {
+            $startTime = \Carbon\Carbon::createFromFormat('H:i', $timeFrom);
+            $endTime = \Carbon\Carbon::createFromFormat('H:i', $timeTo);
+            
+            // Generate slots with the session duration
+            $currentTime = $startTime->copy();
+            
+            while ($currentTime->copy()->addMinutes($duration)->lte($endTime)) {
+                $slots[] = $currentTime->format('H:i');
+                
+                // Move to next slot on base of session duration
+                $currentTime->addMinutes($duration);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Error generating time slots', [
+                'date' => $date,
+                'time_from' => $timeFrom,
+                'time_to' => $timeTo,
+                'duration' => $duration,
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return $slots;
     }
 }

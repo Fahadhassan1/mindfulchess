@@ -240,6 +240,8 @@ class TeacherController extends Controller
             'teaching_type' => 'nullable|string|in:adult,kids,all',
             'bio' => 'nullable|string',
             'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'session_notification_preference' => 'nullable|string|in:all,availability_match',
+            'receive_session_notifications' => 'nullable|boolean',
         ]);
 
         // Handle file upload for profile image
@@ -257,8 +259,12 @@ class TeacherController extends Controller
         // Update or create teacher profile
         $profileData = $request->only([
             'teaching_type',
-            'bio'
+            'bio',
+            'session_notification_preference',
         ]);
+
+        // Handle the checkbox - if not checked, it won't be in the request
+        $profileData['receive_session_notifications'] = $request->has('receive_session_notifications');
 
         if (isset($imageName)) {
             $profileData['profile_image'] = $imageName;

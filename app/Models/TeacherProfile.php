@@ -22,6 +22,8 @@ class TeacherProfile extends Model
         'profile_image',
         'is_active',
         'high_level_teacher',
+        'session_notification_preference',
+        'receive_session_notifications',
     ];
 
     /**
@@ -32,6 +34,7 @@ class TeacherProfile extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'high_level_teacher' => 'boolean',
+        'receive_session_notifications' => 'boolean',
     ];
 
     /**

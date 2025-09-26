@@ -155,6 +155,85 @@
                     </section>
                 </div>
             </div>
+
+            <!-- Notification Preferences Section -->
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <section>
+                        <header>
+                            <h2 class="text-lg font-medium text-gray-900">
+                                {{ __('Notification Preferences') }}
+                            </h2>
+                            
+                            <p class="mt-1 text-sm text-gray-600">
+                                {{ __("Control how you receive session assignment notifications.") }}
+                            </p>
+                        </header>
+
+                        <form method="post" action="{{ route('teacher.profile.update') }}" class="mt-6 space-y-6">
+                            @csrf
+                            @method('put')
+                            
+                            <!-- Session Notifications Toggle -->
+                            <div>
+                                <label class="flex items-center">
+                                    <input type="checkbox" 
+                                           name="receive_session_notifications" 
+                                           value="1"
+                                           {{ ($teacher->teacherProfile && $teacher->teacherProfile->receive_session_notifications) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <span class="ml-2 text-sm text-gray-600">Receive session assignment notifications</span>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    When disabled, you won't receive any email notifications for new session requests.
+                                </p>
+                            </div>
+
+                            <!-- Notification Preference -->
+                            <div>
+                                <label for="session_notification_preference" class="block text-sm font-medium text-gray-700">
+                                    Notification Type
+                                </label>
+                                <select name="session_notification_preference" 
+                                        id="session_notification_preference" 
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="all" {{ ($teacher->teacherProfile && $teacher->teacherProfile->session_notification_preference === 'all') ? 'selected' : '' }}>
+                                        All Session Requests
+                                    </option>
+                                    <option value="availability_match" {{ ($teacher->teacherProfile && $teacher->teacherProfile->session_notification_preference === 'availability_match') ? 'selected' : '' }}>
+                                        Only When Student Times Match My Availability
+                                    </option>
+                                </select>
+                                <div class="mt-2 text-xs text-gray-500 space-y-1">
+                                    <p><strong>All Session Requests:</strong> You'll receive notifications for every new session request, regardless of timing.</p>
+                                    <p><strong>Only Matching Availability:</strong> You'll only receive notifications when the student's requested times overlap with your set availability schedule.</p>
+                                </div>
+                            </div>
+
+                            <!-- Current Settings Display -->
+                            <div class="bg-gray-50 rounded-md p-4">
+                                <h3 class="text-sm font-medium text-gray-900 mb-2">Current Settings:</h3>
+                                <div class="space-y-1 text-sm text-gray-600">
+                                    <p>
+                                        <span class="font-medium">Notifications:</span> 
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ ($teacher->teacherProfile && $teacher->teacherProfile->receive_session_notifications) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                            {{ ($teacher->teacherProfile && $teacher->teacherProfile->receive_session_notifications) ? 'Enabled' : 'Disabled' }}
+                                        </span>
+                                    </p>
+                                    <p>
+                                        <span class="font-medium">Type:</span> 
+                                        {{ ($teacher->teacherProfile && $teacher->teacherProfile->session_notification_preference === 'availability_match') ? 'Only Matching Availability' : 'All Session Requests' }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-4">
+                                <x-primary-button>{{ __('Save Notification Preferences') }}</x-primary-button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>

@@ -114,8 +114,7 @@
             <h1 class="success-title">Payment Successful!</h1>
             
             <p class="success-message">
-                Thank you for your payment. Your chess lesson has been booked successfully.
-                A confirmation email will be sent to your email address shortly.
+                Thank you for your payment. Your booking had been received. We will be in touch to arrange your session.
             </p>
             
             <div class="order-details">
